@@ -1,6 +1,6 @@
-# KidoFlux — mobile app
+# KiddoFlux — mobile app
 
-Expo app for KidoFlux (Carpool + Pedibus).
+Expo app for KiddoFlux (Carpool + Pedibus).
 
 **Stack:** Expo SDK 54 · React Native 0.81.5 · React 19.1 · TypeScript (strict) · NativeWind v4 · Tailwind CSS v3.4
 
@@ -21,8 +21,8 @@ You do **not** need to install Expo CLI globally. Always use `npx expo ...`.
 ## 2. Install
 
 ```bash
-git clone <repo-url> KidoFlux
-cd KidoFlux/mobile
+git clone <repo-url> KiddoFlux
+cd KiddoFlux/mobile
 npm install
 ```
 
