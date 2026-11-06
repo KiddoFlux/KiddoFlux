@@ -1,24 +1,22 @@
+import { isWeekScheduleFinal } from '@/utils/schedule';
+import { toMinutes, type TimeString } from '@/utils/time';
+
 // Names are written out because Intl is not reliable on Hermes.
 type WeekdayNames = {
   label: string;
   fullName: string;
-  lowerName: string;
 };
 
 /** Monday first. */
 export const WEEKDAYS: readonly WeekdayNames[] = [
-  { label: 'L', fullName: 'Luni', lowerName: 'luni' },
-  { label: 'Ma', fullName: 'Marți', lowerName: 'marți' },
-  { label: 'Mi', fullName: 'Miercuri', lowerName: 'miercuri' },
-  { label: 'J', fullName: 'Joi', lowerName: 'joi' },
-  { label: 'V', fullName: 'Vineri', lowerName: 'vineri' },
-  { label: 'S', fullName: 'Sâmbătă', lowerName: 'sâmbătă' },
-  { label: 'D', fullName: 'Duminică', lowerName: 'duminică' },
+  { label: 'L', fullName: 'Luni' },
+  { label: 'Ma', fullName: 'Marți' },
+  { label: 'Mi', fullName: 'Miercuri' },
+  { label: 'J', fullName: 'Joi' },
+  { label: 'V', fullName: 'Vineri' },
+  { label: 'S', fullName: 'Sâmbătă' },
+  { label: 'D', fullName: 'Duminică' },
 ];
-
-const SUNDAY_INDEX = 0;
-/** Next week's schedule is ready from this hour on Sunday. */
-const SCHEDULE_READY_HOUR = 18;
 
 const MONTHS = [
   'Ianuarie',
@@ -88,12 +86,22 @@ export function getWeekDays(date: Date): Date[] {
  * once every parent's schedule for the new week is in.
  */
 export function getScheduleDate(now: Date): Date {
-  const isScheduleReady =
-    now.getDay() === SUNDAY_INDEX && now.getHours() >= SCHEDULE_READY_HOUR;
-
-  return isScheduleReady
+  return isWeekScheduleFinal(now)
     ? new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
     : now;
+}
+
+/** True while a ride on `isoDate` at `departureTime` is still ahead of `now`. */
+export function isRideUpcoming(
+  isoDate: string,
+  departureTime: TimeString,
+  now: Date,
+): boolean {
+  const today = toISODate(now);
+  if (isoDate !== today) return isoDate > today;
+
+  const minutesNow = now.getHours() * 60 + now.getMinutes();
+  return toMinutes(departureTime) > minutesNow;
 }
 
 /** "YYYY-MM-DD" from local parts: toISOString() is UTC and can shift the day. */

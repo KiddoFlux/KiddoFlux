@@ -1,4 +1,3 @@
-import type { AvatarTone } from '@/components/ui/Avatar';
 import type { Child, RideDirection } from '@/types/ride';
 import type { TimeString } from '@/utils/time';
 
@@ -14,16 +13,6 @@ export type CalendarRide = {
   seatsTaken: number;
   seatsTotal: number;
   children: readonly Child[];
+  /** True once the driver has sent an alert that they can't make this ride. */
+  needsReplacement: boolean;
 };
-
-export type AvailableParent = {
-  id: string;
-  name: string;
-  initial: string;
-  tone: AvatarTone;
-};
-
-/** Keyed by local calendar date in "YYYY-MM-DD" format. */
-export type AvailableParentsByDate = Readonly<
-  Record<string, readonly AvailableParent[]>
->;

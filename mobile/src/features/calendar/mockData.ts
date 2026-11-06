@@ -1,11 +1,7 @@
 import type { Child } from '@/types/ride';
 
 import { getWeekDays, toISODate } from './dateUtils';
-import type {
-  AvailableParent,
-  AvailableParentsByDate,
-  CalendarRide,
-} from './types';
+import type { CalendarRide } from './types';
 
 const MARIA: Child = {
   id: 'child-1',
@@ -38,32 +34,12 @@ const DAVID: Child = {
   tone: 'sage',
 };
 
-const IOANA: AvailableParent = {
-  id: 'parent-1',
-  name: 'Ioana P.',
-  initial: 'I',
-  tone: 'peach',
-};
-const MIHAI: AvailableParent = {
-  id: 'parent-2',
-  name: 'Mihai D.',
-  initial: 'M',
-  tone: 'sage',
-};
-const ELENA: AvailableParent = {
-  id: 'parent-3',
-  name: 'Elena R.',
-  initial: 'E',
-  tone: 'steel',
-};
-const DAN: AvailableParent = {
-  id: 'parent-4',
-  name: 'Dan C.',
-  initial: 'D',
-  tone: 'peach',
-};
-
 const ALL_CHILDREN = [MARIA, ANDREI, LUCA, SOFIA, DAVID];
+
+const IOANA = 'Ioana P.';
+const MIHAI = 'Mihai D.';
+const ELENA = 'Elena R.';
+const DAN = 'Dan C.';
 
 const MORNING = {
   direction: 'toSchool',
@@ -78,12 +54,15 @@ const AFTERNOON = {
 
 /** Null means the current user drives. Morning and afternoon for Monday to Friday. */
 const WEEK_DRIVERS: readonly [string | null, string | null][] = [
-  [null, IOANA.name],
-  [MIHAI.name, ELENA.name],
-  [null, DAN.name],
-  [IOANA.name, null],
-  [ELENA.name, MIHAI.name],
+  [null, IOANA],
+  [MIHAI, ELENA],
+  [null, DAN],
+  [IOANA, null],
+  [ELENA, MIHAI],
 ];
+
+/** Friday afternoon shows what a ride looks like after its driver sent an alert. */
+const ALERTED_RIDE_DAY_INDEX = 4;
 
 /**
  * The whole group's week: all 10 rides, each with its driver and all the children.
@@ -105,6 +84,7 @@ export function getMockRides(weekDate: Date): CalendarRide[] {
         id: `${date}-afternoon`,
         driverName: afternoonDriver,
         children: ALL_CHILDREN,
+        needsReplacement: index === ALERTED_RIDE_DAY_INDEX,
       },
       {
         ...shared,
@@ -112,22 +92,8 @@ export function getMockRides(weekDate: Date): CalendarRide[] {
         id: `${date}-morning`,
         driverName: morningDriver,
         children: ALL_CHILDREN,
+        needsReplacement: false,
       },
     ];
   });
-}
-
-export function getMockAvailableParents(
-  weekDate: Date,
-): AvailableParentsByDate {
-  const [monday, tuesday, wednesday, thursday, friday] =
-    getWeekDays(weekDate).map(toISODate);
-
-  return {
-    [monday]: [IOANA, MIHAI],
-    [tuesday]: [ELENA],
-    [wednesday]: [IOANA, ELENA, DAN],
-    [thursday]: [MIHAI, ELENA],
-    [friday]: [IOANA, MIHAI, ELENA, DAN],
-  };
 }

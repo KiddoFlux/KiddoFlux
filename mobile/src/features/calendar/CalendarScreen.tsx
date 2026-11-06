@@ -1,15 +1,14 @@
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AppText } from '@/components/ui/AppText';
 import {
   TAB_BAR_BOTTOM_GAP,
   TAB_BAR_HEIGHT,
 } from '@/components/navigation/TabBar';
+import { AppText } from '@/components/ui/AppText';
 import { toMinutes } from '@/utils/time';
 
-import { AvailableParentsCard } from './components/AvailableParentsCard';
 import { CalendarHeader } from './components/CalendarHeader';
 import { DayRideCard } from './components/DayRideCard';
 import { EmptyDayCard } from './components/EmptyDayCard';
@@ -18,10 +17,10 @@ import {
   formatMonthYear,
   formatShortDate,
   getWeekDays,
-  getWeekdayNames,
+  isRideUpcoming,
   toISODate,
 } from './dateUtils';
-import type { AvailableParentsByDate, CalendarRide } from './types';
+import type { CalendarRide } from './types';
 
 const SCREEN_TOP_PADDING = 26;
 const SCREEN_SIDE_PADDING = 20;
@@ -29,25 +28,26 @@ const SECTION_GAP = 18;
 
 export type CalendarScreenProps = {
   rides: readonly CalendarRide[];
-  availableParentsByDate: AvailableParentsByDate;
-  initialDate?: Date;
+  initialDate: Date;
+  /** Rides before this moment can no longer get a "Nu pot conduce" alert. */
+  now: Date;
   onPlanRides: () => void;
   onOpenRide: (rideId: string) => void;
-  onOpenAvailableParents: (isoDate: string) => void;
+  onReportCannotDrive: (rideId: string) => void;
+  onTakeOverRide: (rideId: string) => void;
 };
 
 export function CalendarScreen({
   rides,
-  availableParentsByDate,
   initialDate,
+  now,
   onPlanRides,
   onOpenRide,
-  onOpenAvailableParents,
+  onReportCannotDrive,
+  onTakeOverRide,
 }: CalendarScreenProps) {
   const insets = useSafeAreaInsets();
-  const [selectedDate, setSelectedDate] = useState(
-    () => initialDate ?? new Date(),
-  );
+  const [selectedDate, setSelectedDate] = useState(initialDate);
 
   const selectedIsoDate = toISODate(selectedDate);
   const ridesOfDay = rides
@@ -56,6 +56,32 @@ export function CalendarScreen({
 
   const getRideCount = (isoDate: string) =>
     rides.filter((ride) => ride.date === isoDate).length;
+
+  const handleCannotDrive = (rideId: string) => {
+    Alert.alert(
+      'Nu poți conduce?',
+      'Toți părinții din grup vor primi o alertă, ca să preia cineva cursa.',
+      [
+        { text: 'Renunță', style: 'cancel' },
+        {
+          text: 'Trimite alerta',
+          style: 'destructive',
+          onPress: () => onReportCannotDrive(rideId),
+        },
+      ],
+    );
+  };
+
+  const handleTakeOver = (rideId: string) => {
+    Alert.alert(
+      'Preiei cursa?',
+      'Vei deveni șoferul acestei curse, iar părinții din grup vor fi anunțați.',
+      [
+        { text: 'Renunță', style: 'cancel' },
+        { text: 'Preiau cursa', onPress: () => onTakeOverRide(rideId) },
+      ],
+    );
+  };
 
   return (
     <ScrollView
@@ -75,7 +101,7 @@ export function CalendarScreen({
       />
 
       <WeekStrip
-        days={getWeekDays(initialDate ?? selectedDate)}
+        days={getWeekDays(initialDate)}
         selectedDate={selectedDate}
         getRideCount={getRideCount}
         onSelectDate={setSelectedDate}
@@ -92,23 +118,36 @@ export function CalendarScreen({
         </View>
 
         {ridesOfDay.length > 0 ? (
-          ridesOfDay.map((ride) => (
-            <DayRideCard
-              key={ride.id}
-              ride={ride}
-              onPress={() => onOpenRide(ride.id)}
-            />
-          ))
+          ridesOfDay.map((ride) => {
+            const isMyRide = ride.driverName === null;
+            const isUpcoming = isRideUpcoming(
+              ride.date,
+              ride.departureTime,
+              now,
+            );
+
+            return (
+              <DayRideCard
+                key={ride.id}
+                ride={ride}
+                onPress={() => onOpenRide(ride.id)}
+                onCannotDrive={
+                  isMyRide && isUpcoming
+                    ? () => handleCannotDrive(ride.id)
+                    : undefined
+                }
+                onTakeOver={
+                  !isMyRide && ride.needsReplacement && isUpcoming
+                    ? () => handleTakeOver(ride.id)
+                    : undefined
+                }
+              />
+            );
+          })
         ) : (
           <EmptyDayCard onPlanRides={onPlanRides} />
         )}
       </View>
-
-      <AvailableParentsCard
-        parents={availableParentsByDate[selectedIsoDate] ?? []}
-        weekdayName={getWeekdayNames(selectedDate).lowerName}
-        onPress={() => onOpenAvailableParents(selectedIsoDate)}
-      />
     </ScrollView>
   );
 }
