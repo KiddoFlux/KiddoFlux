@@ -16,7 +16,7 @@ export function HomePage() {
       onOpenProfile={noop}
       onOpenNotifications={noop}
       onOpenNextRide={noop}
-      onOpenSchedule={noop}
+      onOpenSchedule={() => router.navigate('/calendar')}
       onOpenMap={noop}
       onScanCode={noop}
       onReportAlert={noop}

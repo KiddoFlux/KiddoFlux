@@ -1,6 +1,8 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 
+import { isWeekScheduleFinal, PLANNING_DEADLINE_HOUR } from '@/utils/schedule';
+
 import { CalendarScreen } from './CalendarScreen';
 import { getScheduleDate, startOfWeek } from './dateUtils';
 import { getMockRides } from './mockData';
@@ -10,11 +12,11 @@ const noop = () => {};
 
 /** Supplies the Calendar's data and actions. CalendarScreen only draws them. */
 export function CalendarPage() {
-  const [scheduleDate] = useState(() => getScheduleDate(new Date()));
+  const [today] = useState(() => new Date());
   const [alertedRideIds, setAlertedRideIds] = useState<readonly string[]>([]);
   const [takenRideIds, setTakenRideIds] = useState<readonly string[]>([]);
 
-  const rides = getMockRides(scheduleDate).map((ride) =>
+  const rides = getMockRides(today).map((ride) =>
     takenRideIds.includes(ride.id)
       ? { ...ride, driverName: null, needsReplacement: false }
       : {
@@ -27,10 +29,16 @@ export function CalendarPage() {
   return (
     <CalendarScreen
       rides={rides}
-      initialDate={scheduleDate}
+      firstWeekDate={today}
+      initialDate={getScheduleDate(today)}
+      nextWeekNote={
+        isWeekScheduleFinal(today)
+          ? null
+          : `Se finalizează duminică, ora ${PLANNING_DEADLINE_HOUR}:00`
+      }
       // TODO: use the real time with Firebase. With mock data, the start of the
       // week keeps the whole week's "Nu pot conduce" buttons available to try.
-      now={startOfWeek(scheduleDate)}
+      now={startOfWeek(today)}
       onPlanRides={() => router.push('/planifica')}
       onOpenRide={noop}
       // TODO: save this to Firebase and send a push alert to the group's parents.

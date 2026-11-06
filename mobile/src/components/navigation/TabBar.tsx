@@ -49,7 +49,7 @@ export function TabBar({
       ]}
     >
       {TABS.map(({ routeName, label, Icon }) => {
-        // Hartă, Calendar and Profil have no route yet, so they stay inert.
+        // A tab stays inert until its route exists (Hartă and Profil for now).
         const route = state.routes.find((item) => item.name === routeName);
         const isActive = route !== undefined && route.key === activeRoute?.key;
 
