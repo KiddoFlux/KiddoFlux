@@ -3,15 +3,17 @@ import { TextInput, View } from 'react-native';
 
 import { AppText } from '@/components/ui/AppText';
 
-import { MAX_SEATS, MIN_SEATS } from '../rideRules';
+import { MIN_SEATS } from '../rideRules';
 
 type SeatsFieldProps = {
   value: number;
+  /** Free seats in the parent's car. */
+  max: number;
   dayName: string;
   onChange: (seats: number) => void;
 };
 
-export function SeatsField({ value, dayName, onChange }: SeatsFieldProps) {
+export function SeatsField({ value, max, dayName, onChange }: SeatsFieldProps) {
   const [text, setText] = useState(String(value));
 
   const handleChangeText = (next: string) => {
@@ -21,7 +23,7 @@ export function SeatsField({ value, dayName, onChange }: SeatsFieldProps) {
     }
 
     const seats = Number(next);
-    if (Number.isInteger(seats) && seats >= MIN_SEATS && seats <= MAX_SEATS) {
+    if (Number.isInteger(seats) && seats >= MIN_SEATS && seats <= max) {
       setText(next);
       onChange(seats);
     }
@@ -33,7 +35,7 @@ export function SeatsField({ value, dayName, onChange }: SeatsFieldProps) {
         Locuri
       </AppText>
       <TextInput
-        accessibilityLabel={`Locuri ${dayName}, între ${MIN_SEATS} și ${MAX_SEATS}`}
+        accessibilityLabel={`Locuri ${dayName}, între ${MIN_SEATS} și ${max}`}
         value={text}
         onChangeText={handleChangeText}
         onBlur={() => setText(String(value))}

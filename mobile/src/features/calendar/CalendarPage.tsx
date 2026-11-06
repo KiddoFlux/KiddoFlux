@@ -1,26 +1,71 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
+import { useAuth } from '@/features/auth/AuthProvider';
 import { isWeekScheduleFinal, PLANNING_DEADLINE_HOUR } from '@/utils/schedule';
 
+import { subscribeWeekPlan } from '../plan-rides/planStorage';
+import type { WeekPlan } from '../plan-rides/types';
 import { CalendarScreen } from './CalendarScreen';
-import { getScheduleDate, startOfWeek } from './dateUtils';
+import {
+  addWeeks,
+  getScheduleDate,
+  getWeekDays,
+  startOfWeek,
+  toISODate,
+} from './dateUtils';
 import { getMockRides, mockMyChildrenIds } from './mockData';
+import { mergePublishedRides } from './publishedRides';
 
 /** Supplies the Calendar's data and actions. CalendarScreen only draws them. */
 export function CalendarPage() {
+  const { profil } = useAuth();
   const [today] = useState(() => new Date());
+  const [plans, setPlans] = useState<readonly (WeekPlan | null)[]>([
+    null,
+    null,
+  ]);
   const [alertedRideIds, setAlertedRideIds] = useState<readonly string[]>([]);
   const [takenRideIds, setTakenRideIds] = useState<readonly string[]>([]);
 
-  const rides = getMockRides(today).map((ride) =>
-    takenRideIds.includes(ride.id)
-      ? { ...ride, driverName: null, needsReplacement: false }
-      : {
-          ...ride,
-          needsReplacement:
-            ride.needsReplacement || alertedRideIds.includes(ride.id),
-        },
+  const parentId = profil?.id;
+  // This week and next week, as Monday dates ("YYYY-MM-DD").
+  const weeks = useMemo(() => {
+    const monday = startOfWeek(today);
+    return [monday, addWeeks(monday, 1)].map((start) => ({
+      start: toISODate(start),
+      dates: new Set(getWeekDays(start).map(toISODate)),
+    }));
+  }, [today]);
+
+  // Live: a plan published on the planning page shows up here right away.
+  useEffect(() => {
+    if (!parentId) return;
+
+    const unsubscribes = weeks.map(({ start }, index) =>
+      subscribeWeekPlan(parentId, start, (plan) =>
+        setPlans((current) =>
+          current.map((existing, i) => (i === index ? plan : existing)),
+        ),
+      ),
+    );
+    return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
+  }, [parentId, weeks]);
+
+  const publishedPlans = weeks.flatMap(({ dates }, index) => {
+    const plan = plans[index];
+    return plan ? [{ weekDates: dates, plan }] : [];
+  });
+
+  const rides = mergePublishedRides(getMockRides(today), publishedPlans).map(
+    (ride) =>
+      takenRideIds.includes(ride.id)
+        ? { ...ride, driverName: null, needsReplacement: false }
+        : {
+            ...ride,
+            needsReplacement:
+              ride.needsReplacement || alertedRideIds.includes(ride.id),
+          },
   );
 
   return (

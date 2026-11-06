@@ -5,6 +5,9 @@ import type { RideDraft, RideTimes } from './types';
 export const MIN_SEATS = 1;
 export const MAX_SEATS = 7;
 
+/** Fewest rides a parent must offer per week, out of the 10 slots. */
+export const MIN_RIDES = 3;
+
 // Times start empty: school hours vary, so each parent sets their own.
 export const NEW_RIDE: RideDraft = {
   departureTime: null,
