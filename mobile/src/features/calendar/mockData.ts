@@ -1,6 +1,6 @@
 import type { Child } from '@/types/ride';
 
-import { getWeekDays, toISODate } from './dateUtils';
+import { addWeeks, getWeekDays, toISODate } from './dateUtils';
 import type { CalendarRide } from './types';
 
 const MARIA: Child = {
@@ -52,8 +52,10 @@ const AFTERNOON = {
   arrivalTime: '15:00',
 } as const;
 
+type WeekDrivers = readonly [string | null, string | null][];
+
 /** Null means the current user drives. Morning and afternoon for Monday to Friday. */
-const WEEK_DRIVERS: readonly [string | null, string | null][] = [
+const THIS_WEEK_DRIVERS: WeekDrivers = [
   [null, IOANA],
   [MIHAI, ELENA],
   [null, DAN],
@@ -61,19 +63,36 @@ const WEEK_DRIVERS: readonly [string | null, string | null][] = [
   [ELENA, MIHAI],
 ];
 
+const NEXT_WEEK_DRIVERS: WeekDrivers = [
+  [DAN, null],
+  [IOANA, MIHAI],
+  [ELENA, null],
+  [null, DAN],
+  [MIHAI, IOANA],
+];
+
 /** Friday afternoon shows what a ride looks like after its driver sent an alert. */
 const ALERTED_RIDE_DAY_INDEX = 4;
 
-/**
- * The whole group's week: all 10 rides, each with its driver and all the children.
- * Dates are built from `weekDate`, so the mock week never goes stale.
- */
-export function getMockRides(weekDate: Date): CalendarRide[] {
-  const schoolDays = getWeekDays(weekDate).slice(0, WEEK_DRIVERS.length);
+/** Both weeks' rides. Dates are built from `today`, so they never go stale. */
+export function getMockRides(today: Date): CalendarRide[] {
+  return [
+    ...getMockWeekRides(today, THIS_WEEK_DRIVERS, ALERTED_RIDE_DAY_INDEX),
+    ...getMockWeekRides(addWeeks(today, 1), NEXT_WEEK_DRIVERS, null),
+  ];
+}
+
+/** The whole group's week: all 10 rides, each with its driver and all the children. */
+function getMockWeekRides(
+  weekDate: Date,
+  drivers: WeekDrivers,
+  alertedDayIndex: number | null,
+): CalendarRide[] {
+  const schoolDays = getWeekDays(weekDate).slice(0, drivers.length);
 
   return schoolDays.flatMap((day, index) => {
     const date = toISODate(day);
-    const [morningDriver, afternoonDriver] = WEEK_DRIVERS[index];
+    const [morningDriver, afternoonDriver] = drivers[index];
     const shared = { date, seatsTaken: 5, seatsTotal: 5 };
 
     return [
@@ -84,7 +103,7 @@ export function getMockRides(weekDate: Date): CalendarRide[] {
         id: `${date}-afternoon`,
         driverName: afternoonDriver,
         children: ALL_CHILDREN,
-        needsReplacement: index === ALERTED_RIDE_DAY_INDEX,
+        needsReplacement: index === alertedDayIndex,
       },
       {
         ...shared,

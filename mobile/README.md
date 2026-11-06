@@ -78,10 +78,8 @@ npx expo start -c
 
 ```
 mobile/
-├── App.tsx               # Root component: imports global.css, SafeAreaProvider, HomeScreen
-├── index.ts              # Entry point (registers App)
 ├── app.json              # Expo config (name, slug, icons, splash)
-├── global.css            # Tailwind directives, imported once in App.tsx
+├── global.css            # Tailwind directives, imported once in src/app/_layout.tsx
 ├── tailwind.config.js    # Tailwind config + NativeWind preset
 ├── babel.config.js       # babel-preset-expo with NativeWind JSX
 ├── metro.config.js       # Metro bundler wrapped with withNativeWind
@@ -89,8 +87,10 @@ mobile/
 ├── .env.example          # Template for .env
 ├── assets/               # Icons and splash images
 └── src/
+    ├── app/              # Expo Router routes; _layout.tsx is the root (fonts, loading screen)
+    ├── features/         # One folder per page (home, calendar, plan-rides, loading)
     ├── components/       # Reusable UI components
-    ├── screens/          # Full screens (HomeScreen.tsx)
+    ├── theme/            # Shared colors, shadows and icon settings
     ├── hooks/            # Custom React hooks
     ├── services/         # API clients and other side-effect code
     ├── types/            # Shared TypeScript types
@@ -103,23 +103,23 @@ Style components with Tailwind classes through the `className` prop:
 
 ```tsx
 <View className="flex-1 items-center justify-center bg-white">
-  <Text className="text-2xl font-bold">Hello</Text>
+  <Text className="font-bold text-2xl">Hello</Text>
 </View>
 ```
 
-Only files matched by `content` in `tailwind.config.js` (`App.tsx` and everything under `src/`) get styles. If you put components somewhere else, add that path there.
+Only files matched by `content` in `tailwind.config.js` (everything under `src/`) get styles. If you put components somewhere else, add that path there.
 
 ## 7. Rules for dependencies
 
-- Add native or Expo packages with `npx expo install <package>`, not `npm install`. It picks the version that matches SDK 54.
+- Add native or Expo packages with `npx expo install <package>`, not `npm install`. It picks the version that matches SDK 58.
 - Do **not** upgrade to NativeWind v5 or Tailwind CSS v4. NativeWind v4 only works with Tailwind v3.
 - Do not upgrade Expo, React Native or React on your own. The whole team moves SDK versions together.
 
 ## Troubleshooting
 
-| Problem                               | Fix                                                                                                                                           |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `className` has no effect             | Run `npx expo start -c`. Check that the file is covered by `content` in `tailwind.config.js` and that `App.tsx` still imports `./global.css`. |
-| Expo Go says "incompatible SDK"       | Update Expo Go from the app store. It must support SDK 54.                                                                                    |
-| Phone can't connect to the dev server | Put both devices on the same Wi-Fi, or run `npx expo start --tunnel`.                                                                         |
-| Version mismatch warnings             | Run `npx expo install --fix`, then `npx expo-doctor`.                                                                                         |
+| Problem                               | Fix                                                                                                                                                     |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `className` has no effect             | Run `npx expo start -c`. Check that the file is covered by `content` in `tailwind.config.js` and that `src/app/_layout.tsx` still imports `global.css`. |
+| Expo Go says "incompatible SDK"       | Update Expo Go from the app store. It must support SDK 58.                                                                                              |
+| Phone can't connect to the dev server | Put both devices on the same Wi-Fi, or run `npx expo start --tunnel`.                                                                                   |
+| Version mismatch warnings             | Run `npx expo install --fix`, then `npx expo-doctor`.                                                                                                   |

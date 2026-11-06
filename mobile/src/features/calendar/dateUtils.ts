@@ -81,6 +81,15 @@ export function getWeekDays(date: Date): Date[] {
   );
 }
 
+/** The same weekday, `weeks` weeks later (or earlier, if negative). */
+export function addWeeks(date: Date, weeks: number): Date {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate() + weeks * DAYS_IN_WEEK,
+  );
+}
+
 /**
  * The day the Calendar opens on: today, or next Monday from Sunday evening,
  * once every parent's schedule for the new week is in.
@@ -118,6 +127,19 @@ export function isSameDay(first: Date, second: Date): boolean {
 /** For example "Noiembrie 2026". */
 export function formatMonthYear(date: Date): string {
   return `${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+/** Monday to Sunday, for example "2–8 noiembrie" or "30 noiembrie – 6 decembrie". */
+export function formatWeekRange(date: Date): string {
+  const days = getWeekDays(date);
+  const monday = days[0];
+  const sunday = days[days.length - 1];
+  const startMonth = MONTHS[monday.getMonth()].toLowerCase();
+  const endMonth = MONTHS[sunday.getMonth()].toLowerCase();
+
+  return startMonth === endMonth
+    ? `${monday.getDate()}–${sunday.getDate()} ${endMonth}`
+    : `${monday.getDate()} ${startMonth} – ${sunday.getDate()} ${endMonth}`;
 }
 
 /** For example "Vineri, 6 nov." */

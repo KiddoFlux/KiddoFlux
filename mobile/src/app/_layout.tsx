@@ -9,8 +9,9 @@ import {
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
+import LoadingScreen from '@/features/loading/LoadingScreen';
 import { colors } from '@/theme/colors';
 
 SplashScreen.preventAutoHideAsync();
@@ -21,6 +22,7 @@ export default function RootLayout() {
     InterTight_500Medium,
     InterTight_700Bold,
   });
+  const [loadingDone, setLoadingDone] = useState(false);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -30,6 +32,15 @@ export default function RootLayout() {
 
   if (!fontsLoaded && !fontError) {
     return null;
+  }
+
+  if (!loadingDone) {
+    return (
+      <>
+        <LoadingScreen onFinished={() => setLoadingDone(true)} />
+        <StatusBar style="light" />
+      </>
+    );
   }
 
   return (
