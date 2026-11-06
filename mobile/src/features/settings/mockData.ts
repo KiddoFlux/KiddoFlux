@@ -1,10 +1,2 @@
-import type { SettingsUser } from './types';
-
-export const mockSettingsUser: SettingsUser = {
-  name: 'Ana Popescu',
-  email: 'ana.popescu@email.com',
-  initial: 'A',
-  avatarUrl: null,
-};
-
+// TODO: load the notification preference from the user's account.
 export const mockNotificationsEnabled = true;

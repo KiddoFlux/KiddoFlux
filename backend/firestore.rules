@@ -1,0 +1,16 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Un parinte logat isi poate citi DOAR propriul profil.
+    // Fara listare, fara scrieri din aplicatie (profilurile se incarca din scriptul de seed).
+    match /parinti/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow list, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
