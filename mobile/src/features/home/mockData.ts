@@ -1,12 +1,6 @@
-import type { CurrentUser, NextRide } from './types';
+import type { NextRide } from './types';
 
-export const mockUser: CurrentUser = {
-  id: 'user-1',
-  name: 'Ana',
-  initial: 'A',
-  greeting: 'Bună dimineața,',
-};
-
+// TODO: replace with the real next ride once rides are stored in Firestore.
 export const mockNextRide: NextRide = {
   dayLabel: 'azi',
   direction: 'toSchool',

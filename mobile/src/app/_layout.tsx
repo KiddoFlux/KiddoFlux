@@ -9,14 +9,46 @@ import {
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-
 import { useEffect, useState } from 'react';
+import { View } from 'react-native';
 
+import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
 import LoadingScreen from '@/features/loading/LoadingScreen';
 import { colors } from '@/theme/colors';
 
 SplashScreen.preventAutoHideAsync();
+
+/** Logged-out users only see the login screen; everything else needs a signed-in parent. */
+function AppNavigator() {
+  const { stare } = useAuth();
+
+  // Checking the saved session takes a moment; show the background, not a flash of login.
+  if (stare === 'se-incarca') {
+    return <View className="flex-1 bg-mint" />;
+  }
+
+  const isSignedIn = stare === 'conectat';
+
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.mint },
+      }}
+    >
+      <Stack.Protected guard={isSignedIn}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="planifica" />
+        <Stack.Screen name="profil" />
+        <Stack.Screen name="despre" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={!isSignedIn}>
+        <Stack.Screen name="login" />
+      </Stack.Protected>
+    </Stack>
+  );
+}
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -46,17 +78,9 @@ export default function RootLayout() {
   }
 
   return (
-    <>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.mint },
-        }}
-      >
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="planifica" />
-      </Stack>
+    <AuthProvider>
+      <AppNavigator />
       <StatusBar style="dark" />
-    </>
+    </AuthProvider>
   );
 }

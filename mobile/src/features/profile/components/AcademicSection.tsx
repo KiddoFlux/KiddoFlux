@@ -12,11 +12,16 @@ export type AcademicField = {
 };
 
 type AcademicSectionProps = {
+  /** Section heading. Also used for the parent and vehicle cards, which share this layout. */
+  title?: string;
   /** One detail row per entry, so more fields can be added without touching the layout. */
   fields: readonly AcademicField[];
 };
 
-export function AcademicSection({ fields }: AcademicSectionProps) {
+export function AcademicSection({
+  title = 'Informații academice',
+  fields,
+}: AcademicSectionProps) {
   return (
     <View className="gap-3">
       <AppText
@@ -24,7 +29,7 @@ export function AcademicSection({ fields }: AcademicSectionProps) {
         className="font-bold text-[20px]"
         numberOfLines={1}
       >
-        Informații academice
+        {title}
       </AppText>
 
       <View className="gap-5 rounded-[28px] bg-white p-5" style={shadows.soft}>

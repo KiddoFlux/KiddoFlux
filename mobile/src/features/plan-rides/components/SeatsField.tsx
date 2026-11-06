@@ -3,8 +3,7 @@ import { TextInput, View } from 'react-native';
 
 import { AppText } from '@/components/ui/AppText';
 
-const MIN_SEATS = 1;
-const MAX_SEATS = 7;
+import { MAX_SEATS, MIN_SEATS } from '../rideRules';
 
 type SeatsFieldProps = {
   value: number;

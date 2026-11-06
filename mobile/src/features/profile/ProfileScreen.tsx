@@ -24,10 +24,31 @@ export type ProfileScreenProps = {
 export function ProfileScreen({ profile, onBack }: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
 
-  // Add a field here and it shows up in the Informații academice card.
+  // Add a field to one of these lists and it shows up in its card.
   const academicFields: readonly AcademicField[] = [
     { label: 'Școala elevului', value: profile.schoolName, numberOfLines: 2 },
+    { label: 'Adresa școlii', value: profile.schoolAddress, numberOfLines: 2 },
+    { label: 'Clasa', value: profile.grade },
     { label: 'Nr. matricol', value: profile.matriculationNumber },
+  ];
+
+  const parentFields: readonly AcademicField[] = [
+    { label: 'Nume', value: profile.parentName },
+    { label: 'Telefon', value: profile.parentPhone },
+    { label: 'Email', value: profile.parentEmail },
+    { label: 'Adresă acasă', value: profile.homeAddress, numberOfLines: 2 },
+  ];
+
+  const vehicleFields: readonly AcademicField[] = [
+    { label: 'Mașină', value: profile.vehicleName },
+    { label: 'Anul fabricației', value: String(profile.vehicleYear) },
+    { label: 'Culoare', value: profile.vehicleColor },
+    { label: 'Număr de înmatriculare', value: profile.vehiclePlate },
+    { label: 'Locuri', value: String(profile.vehicleSeats) },
+    {
+      label: 'Scaune auto pentru copii',
+      value: String(profile.vehicleChildSeats),
+    },
   ];
 
   return (
@@ -44,6 +65,8 @@ export function ProfileScreen({ profile, onBack }: ProfileScreenProps) {
       <ScreenTopBar title="Profil" onBack={onBack} />
       <ProfileCard profile={profile} />
       <AcademicSection fields={academicFields} />
+      <AcademicSection title="Părinte" fields={parentFields} />
+      <AcademicSection title="Vehicul" fields={vehicleFields} />
     </ScrollView>
   );
 }

@@ -1,16 +1,22 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 
+import { useAuth } from '@/features/auth/AuthProvider';
 import { isWeekScheduleFinal } from '@/utils/schedule';
 
 import { PlanningLockedScreen } from './PlanningLockedScreen';
 import { PlanRidesScreen } from './PlanRidesScreen';
+import { getDefaultSeats } from './rideRules';
 import { formatWeekRange, getNextSchoolWeek } from './week';
 
 /** Supplies the planning page's dates and actions. PlanRidesScreen only draws them. */
 export function PlanRidesPage() {
+  const { profil } = useAuth();
   const [today] = useState(() => new Date());
   const [isLocked, setIsLocked] = useState(() => isWeekScheduleFinal(today));
+
+  // Briefly null while signing out, until the app switches to the login screen.
+  if (!profil) return null;
 
   if (isLocked) {
     return (
@@ -25,6 +31,8 @@ export function PlanRidesPage() {
     <PlanRidesScreen
       days={getNextSchoolWeek(today)}
       weekRange={formatWeekRange(today)}
+      defaultHomeAddress={profil.adresaAcasa}
+      defaultSeats={getDefaultSeats(profil.vehicul.numarLocuri)}
       onBack={() => router.back()}
       onPublish={() => {
         // The deadline can pass while this page is open.
