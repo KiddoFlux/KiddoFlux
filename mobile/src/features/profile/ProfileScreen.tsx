@@ -32,11 +32,9 @@ export function ProfileScreen({ profile, onBack }: ProfileScreenProps) {
     { label: 'Nr. matricol', value: profile.matriculationNumber },
   ];
 
-  const parentFields: readonly AcademicField[] = [
-    { label: 'Nume', value: profile.parentName },
-    { label: 'Telefon', value: profile.parentPhone },
-    { label: 'Email', value: profile.parentEmail },
-    { label: 'Adresă acasă', value: profile.homeAddress, numberOfLines: 2 },
+  const studentFields: readonly AcademicField[] = [
+    { label: 'Prenume', value: profile.firstName },
+    { label: 'Înălțime', value: `${profile.heightCm} cm` },
   ];
 
   const vehicleFields: readonly AcademicField[] = [
@@ -65,7 +63,7 @@ export function ProfileScreen({ profile, onBack }: ProfileScreenProps) {
       <ScreenTopBar title="Profil" onBack={onBack} />
       <ProfileCard profile={profile} />
       <AcademicSection fields={academicFields} />
-      <AcademicSection title="Părinte" fields={parentFields} />
+      <AcademicSection title="Informații elev" fields={studentFields} />
       <AcademicSection title="Vehicul" fields={vehicleFields} />
     </ScrollView>
   );

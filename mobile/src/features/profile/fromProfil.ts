@@ -8,7 +8,7 @@ export function toProfileData(profil: ProfilParinte): ProfileData {
 
   return {
     firstName: copil.prenume,
-    initial: copil.prenume.charAt(0).toUpperCase(),
+    initial: profil.prenume.charAt(0).toUpperCase(),
     heightCm: copil.inaltimeCm,
     grade: copil.clasa,
     matriculationNumber: copil.numarMatricol,
