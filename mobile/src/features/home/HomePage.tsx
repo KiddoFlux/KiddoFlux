@@ -33,7 +33,8 @@ export function HomePage() {
       hasUnreadNotifications={mockHasUnreadNotifications}
       onOpenProfile={() => router.push('/profil')}
       onOpenNotifications={noop}
-      onOpenNextRide={noop}
+      // The next ride lives in the Calendar tab, so the card opens it.
+      onOpenNextRide={() => router.navigate('/calendar')}
       onOpenSchedule={() => router.navigate('/calendar')}
       onOpenMap={noop}
       onScanCode={noop}
