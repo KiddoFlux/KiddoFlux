@@ -18,7 +18,7 @@ export const RIDE_SLOTS: readonly RideSlot[] = [
     Icon: Sunrise,
   },
   {
-    direction: 'fromSchool',
+    direction: 'toHome',
     label: 'După-amiaza',
     routeLabel: 'Școala → Acasă',
     Icon: Sunset,

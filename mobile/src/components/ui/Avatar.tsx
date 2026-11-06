@@ -6,13 +6,14 @@ import { AppText } from './AppText';
 
 export type AvatarTone = 'peach' | 'sage' | 'steel';
 
-const RING_WIDTH = 3;
+const DEFAULT_RING_WIDTH = 3;
 
 type AvatarProps = {
   initial: string;
   tone?: AvatarTone;
   size?: number;
   ringColor?: string;
+  ringWidth?: number;
 };
 
 export function Avatar({
@@ -20,6 +21,7 @@ export function Avatar({
   tone = 'peach',
   size = 48,
   ringColor = colors.white,
+  ringWidth = DEFAULT_RING_WIDTH,
 }: AvatarProps) {
   return (
     <View
@@ -28,7 +30,7 @@ export function Avatar({
         width: size,
         height: size,
         borderRadius: size / 2,
-        borderWidth: RING_WIDTH,
+        borderWidth: ringWidth,
         borderColor: ringColor,
         backgroundColor: colors[tone],
       }}
@@ -51,6 +53,7 @@ type AvatarStackProps = {
   size?: number;
   overlap?: number;
   ringColor?: string;
+  ringWidth?: number;
 };
 
 export function AvatarStack({
@@ -58,6 +61,7 @@ export function AvatarStack({
   size = 36,
   overlap = 10,
   ringColor = colors.white,
+  ringWidth = DEFAULT_RING_WIDTH,
 }: AvatarStackProps) {
   return (
     <View className="flex-row">
@@ -68,6 +72,7 @@ export function AvatarStack({
             tone={item.tone}
             size={size}
             ringColor={ringColor}
+            ringWidth={ringWidth}
           />
         </View>
       ))}

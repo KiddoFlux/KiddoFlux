@@ -1,10 +1,10 @@
+import type { RideDirection } from '@/types/ride';
 import type { TimeString } from '@/utils/time';
+
+export type { RideDirection };
 
 /** Local calendar date in "YYYY-MM-DD" format. */
 export type DateString = string;
-
-/** Morning rides go home to school; afternoon rides go school to home. */
-export type RideDirection = 'toSchool' | 'fromSchool';
 
 export type WeekDay = {
   date: DateString;
