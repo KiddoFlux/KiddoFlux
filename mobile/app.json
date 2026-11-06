@@ -32,6 +32,14 @@
           "locationAlwaysPermission": false
         }
       ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "KiddoFlux folosește camera ca să scaneze codurile.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
       "expo-status-bar",
       [
         "expo-splash-screen",
