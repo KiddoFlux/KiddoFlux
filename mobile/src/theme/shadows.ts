@@ -17,6 +17,13 @@ export const shadows = {
     shadowOffset: { width: 0, height: 14 },
     elevation: 10,
   },
+  peach: {
+    shadowColor: colors.peach,
+    shadowOpacity: 0.5,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+  },
   dark: {
     shadowColor: colors.ink,
     shadowOpacity: 0.3,

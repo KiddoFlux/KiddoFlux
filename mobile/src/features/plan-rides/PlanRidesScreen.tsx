@@ -14,6 +14,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { colors } from '@/theme/colors';
 import { ICON_STROKE_WIDTH } from '@/theme/icons';
 import { shadows } from '@/theme/shadows';
+import { PLANNING_DEADLINE_HOUR } from '@/utils/schedule';
 
 import { RideDayCard } from './components/RideDayCard';
 import { RouteFields } from './components/RouteFields';
@@ -204,6 +205,9 @@ export function PlanRidesScreen({
         ))}
 
         <View className="gap-3">
+          <AppText className="text-[13px] text-navy">
+            Poți publica până duminică, ora {PLANNING_DEADLINE_HOUR}:00.
+          </AppText>
           {missingRides > 0 ? (
             <AppText
               accessibilityLiveRegion="polite"
