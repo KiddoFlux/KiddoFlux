@@ -7,15 +7,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/ui/AppText';
 import { colors } from '@/theme/colors';
-
-import { dateToTime, timeToDate } from '../time';
-import type { TimeString } from '../types';
+import { dateToTime, timeToDate, type TimeString } from '@/utils/time';
 
 const PICKER_LOCALE = 'ro-RO';
 
+const EMPTY_TIME_LABEL = '--:--';
+
 type TimeFieldProps = {
   label: string;
-  value: TimeString;
+  /** Null until the parent picks a time. */
+  value: TimeString | null;
   tone: 'steel' | 'peach';
   accessibilityLabel: string;
   onChange: (time: TimeString) => void;
@@ -30,20 +31,23 @@ export function TimeField({
 }: TimeFieldProps) {
   const insets = useSafeAreaInsets();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [draft, setDraft] = useState(() => timeToDate(value));
+  const [draft, setDraft] = useState(() => new Date());
 
   const handlePress = () => {
+    // With no time chosen yet, the picker simply opens at the current time.
+    const initialDate = value ? timeToDate(value) : new Date();
+
     if (Platform.OS === 'android') {
       DateTimePickerAndroid.open({
         mode: 'time',
         is24Hour: true,
-        value: timeToDate(value),
+        value: initialDate,
         onValueChange: (_event, date) => onChange(dateToTime(date)),
       });
       return;
     }
 
-    setDraft(timeToDate(value));
+    setDraft(initialDate);
     setIsSheetOpen(true);
   };
 
@@ -56,7 +60,9 @@ export function TimeField({
     <>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${accessibilityLabel}, ora ${value}`}
+        accessibilityLabel={`${accessibilityLabel}, ${
+          value ? `ora ${value}` : 'nealeasă'
+        }`}
         onPress={handlePress}
         className={`h-16 flex-1 justify-center rounded-[20px] px-3 ${
           tone === 'peach' ? 'bg-peach/30' : 'bg-steel/10'
@@ -65,8 +71,11 @@ export function TimeField({
         <AppText numberOfLines={1} className="text-[12px] text-navy">
           {label}
         </AppText>
-        <AppText numberOfLines={1} className="text-[20px]">
-          {value}
+        <AppText
+          numberOfLines={1}
+          className={`text-[20px] ${value ? 'text-ink' : 'text-steel'}`}
+        >
+          {value ?? EMPTY_TIME_LABEL}
         </AppText>
       </Pressable>
 

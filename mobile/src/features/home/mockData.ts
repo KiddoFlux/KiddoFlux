@@ -9,6 +9,7 @@ export const mockUser: CurrentUser = {
 
 export const mockNextRide: NextRide = {
   dayLabel: 'azi',
+  direction: 'toSchool',
   departureTime: '07:35',
   arrivalTime: '08:00',
   children: [

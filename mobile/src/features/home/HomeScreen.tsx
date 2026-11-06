@@ -6,11 +6,11 @@ import {
   TAB_BAR_HEIGHT,
 } from '@/components/navigation/TabBar';
 
-import { AddRideCard } from './components/AddRideCard';
 import { HomeHeader } from './components/HomeHeader';
 import { NextRideCard } from './components/NextRideCard';
+import { PlanRidesCard } from './components/PlanRidesCard';
 import { QuickActionsMenu } from './components/QuickActionsMenu';
-import type { CurrentUser, NextRide, RideDraft } from './types';
+import type { CurrentUser, NextRide } from './types';
 
 const SCREEN_TOP_PADDING = 26;
 const SCREEN_SIDE_PADDING = 20;
@@ -27,7 +27,7 @@ export type HomeScreenProps = {
   onOpenMap: () => void;
   onScanCode: () => void;
   onReportAlert: () => void;
-  onPublishRide: (draft: RideDraft) => void;
+  onPlanRides: () => void;
 };
 
 export function HomeScreen({
@@ -41,7 +41,7 @@ export function HomeScreen({
   onOpenMap,
   onScanCode,
   onReportAlert,
-  onPublishRide,
+  onPlanRides,
 }: HomeScreenProps) {
   const insets = useSafeAreaInsets();
 
@@ -74,7 +74,7 @@ export function HomeScreen({
           onScanCode={onScanCode}
           onReportAlert={onReportAlert}
         />
-        <AddRideCard onPublish={onPublishRide} />
+        <PlanRidesCard onPress={onPlanRides} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

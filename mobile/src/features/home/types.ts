@@ -1,7 +1,5 @@
 import type { AvatarTone } from '@/components/ui/Avatar';
-
-/** 24-hour time in "HH:mm" format. */
-export type TimeString = `${string}:${string}`;
+import type { TimeString } from '@/utils/time';
 
 export type Child = {
   id: string;
@@ -19,17 +17,11 @@ export type CurrentUser = {
 
 export type NextRide = {
   dayLabel: string;
+  /** Morning rides go to school; afternoon rides go home. */
+  direction: 'toSchool' | 'fromSchool';
   departureTime: TimeString;
   arrivalTime: TimeString;
   children: readonly Child[];
   /** Null when the current user is the driver. */
   driverName: string | null;
-};
-
-export type RideDraft = {
-  from: string;
-  departureTime: TimeString;
-  arrivalTime: TimeString;
-  seats: number;
-  recurring: boolean;
 };

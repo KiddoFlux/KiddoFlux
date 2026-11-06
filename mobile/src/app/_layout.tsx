@@ -6,12 +6,11 @@ import {
   InterTight_700Bold,
   useFonts,
 } from '@expo-google-fonts/inter-tight';
-import { Tabs } from 'expo-router/js-tabs';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
-import { TabBar } from '@/components/navigation/TabBar';
 import { colors } from '@/theme/colors';
 
 SplashScreen.preventAutoHideAsync();
@@ -35,15 +34,15 @@ export default function RootLayout() {
 
   return (
     <>
-      <Tabs
-        tabBar={(props) => <TabBar {...props} />}
+      <Stack
         screenOptions={{
           headerShown: false,
-          sceneStyle: { backgroundColor: colors.mint },
+          contentStyle: { backgroundColor: colors.mint },
         }}
       >
-        <Tabs.Screen name="index" options={{ title: 'Acasă' }} />
-      </Tabs>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="planifica" />
+      </Stack>
       <StatusBar style="dark" />
     </>
   );

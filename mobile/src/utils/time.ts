@@ -1,6 +1,5 @@
-import type { TimeString } from './types';
-
-export const DEFAULT_ARRIVAL_TIME: TimeString = '08:00';
+/** 24-hour time in "HH:mm" format. */
+export type TimeString = `${string}:${string}`;
 
 export function toMinutes(time: TimeString): number {
   const [hours, minutes] = time.split(':').map(Number);

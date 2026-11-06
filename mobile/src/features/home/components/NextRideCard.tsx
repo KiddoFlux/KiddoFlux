@@ -42,15 +42,17 @@ function CardDecoration() {
 
 export function NextRideCard({ ride, onPress }: NextRideCardProps) {
   const childNames = ride.children.map((child) => child.name).join(', ');
+  const destination = ride.direction === 'toSchool' ? 'la școală' : 'acasă';
+  // Only "azi" reads differently here; "mâine" or "luni" stay accurate as they are.
+  const driverDay = ride.dayLabel === 'azi' ? 'astăzi' : ride.dayLabel;
   const driverLabel = ride.driverName
-    ? `conduce ${ride.driverName}`
-    : 'conduci tu';
-  const summary = `${childNames} · ${driverLabel}`;
+    ? `${ride.driverName} conduce ${driverDay}`
+    : `Tu conduci ${driverDay}`;
 
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={`Următoarea cursă ${ride.dayLabel}, plecare la ${ride.departureTime}, la școală la ${ride.arrivalTime}, ${summary}. Deschide statusul live.`}
+      accessibilityLabel={`Următoarea cursă ${ride.dayLabel}, plecare la ${ride.departureTime}, ${destination} la ${ride.arrivalTime}, copii: ${childNames}. ${driverLabel}. Deschide statusul live.`}
       onPress={onPress}
       className="rounded-[28px] bg-navy"
       style={shadows.strong}
@@ -76,7 +78,7 @@ export function NextRideCard({ ride, onPress }: NextRideCardProps) {
             minimumFontScale={0.8}
             className="flex-1 text-[18px] text-sage"
           >
-            → la școală {ride.arrivalTime}
+            → {destination} {ride.arrivalTime}
           </AppText>
         </View>
 
@@ -85,7 +87,7 @@ export function NextRideCard({ ride, onPress }: NextRideCardProps) {
         <View className="flex-row items-center gap-3">
           <AvatarStack items={ride.children} ringColor={colors.navy} />
           <AppText numberOfLines={1} className="flex-1 text-[15px] text-mint">
-            {summary}
+            {driverLabel}
           </AppText>
           <View className="h-11 w-11 items-center justify-center rounded-full bg-peach">
             <ArrowRight
