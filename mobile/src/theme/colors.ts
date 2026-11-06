@@ -9,6 +9,9 @@ export const colors = {
   ink: '#2d2e2e',
   steel: '#508ca4',
   sage: '#c2cfb2',
+  white: '#ffffff',
+  mapGround: '#dcebea',
+  mapBlock: '#c9dfe0',
   // Tyre tints, used only by the loading wheel illustration.
   tyre: '#1d1e1e',
   tread: '#5b5e5e',
