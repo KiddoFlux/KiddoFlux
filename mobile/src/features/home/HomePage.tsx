@@ -36,7 +36,7 @@ export function HomePage() {
       // The next ride lives in the Calendar tab, so the card opens it.
       onOpenNextRide={() => router.navigate('/calendar')}
       onOpenSchedule={() => router.navigate('/calendar')}
-      onOpenMap={noop}
+      onOpenMap={() => router.navigate('/harta')}
       onScanCode={noop}
       onReportAlert={noop}
       onPlanRides={() => router.push('/planifica')}

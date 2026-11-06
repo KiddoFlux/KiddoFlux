@@ -6,7 +6,13 @@ import {
   Settings,
   type LucideIcon,
 } from 'lucide-react-native';
-import { Pressable, View } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 import { AppText } from '@/components/ui/AppText';
 import { colors } from '@/theme/colors';
@@ -31,11 +37,20 @@ const TABS: readonly TabDefinition[] = [
 
 export function TabBar({
   state,
+  descriptors,
   emitter,
   navigateToTab,
   insets,
 }: BottomTabBarProps) {
   const activeRoute = state.routes[state.index];
+
+  // A screen can hide the bar with setOptions({ tabBarStyle: { display: 'none' } }).
+  const activeStyle = activeRoute
+    ? descriptors[activeRoute.key]?.options.tabBarStyle
+    : undefined;
+  const { display } =
+    StyleSheet.flatten(activeStyle as StyleProp<ViewStyle>) ?? {};
+  if (display === 'none') return null;
 
   return (
     <View

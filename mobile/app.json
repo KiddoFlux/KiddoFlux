@@ -24,6 +24,14 @@
       "expo-router",
       "expo-font",
       "@react-native-community/datetimepicker",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "KiddoFlux folosește locația ta ca să îți arate cursele din zonă.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false
+        }
+      ],
       "expo-status-bar",
       [
         "expo-splash-screen",
