@@ -1,5 +1,7 @@
-// Palette for props that cannot take a class name (icons, SVG, shadows).
-// Keep in sync with tailwind.config.js.
+/**
+ * Palette constants for places where Tailwind classes can't reach (SVG fills,
+ * Animated styles). Keep in sync with `theme.extend.colors` in tailwind.config.js.
+ */
 export const colors = {
   mint: '#effbf5',
   navy: '#084887',
@@ -10,4 +12,9 @@ export const colors = {
   white: '#ffffff',
   mapGround: '#dcebea',
   mapBlock: '#c9dfe0',
+  // Tyre tints, used only by the loading wheel illustration.
+  tyre: '#1d1e1e',
+  tread: '#5b5e5e',
 } as const;
+
+export type ColorName = keyof typeof colors;

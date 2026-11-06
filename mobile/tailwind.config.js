@@ -16,6 +16,7 @@ module.exports = {
         steel: '#508ca4',
         sage: '#c2cfb2',
       },
+      // One font family per weight (never use fontWeight on native).
       fontFamily: {
         regular: ['InterTight_400Regular'],
         sans: ['InterTight_500Medium'],
