@@ -1,6 +1,7 @@
 import { ArrowLeft, ArrowRight } from 'lucide-react-native';
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -19,7 +20,7 @@ import { PLANNING_DEADLINE_HOUR } from '@/utils/schedule';
 import { RideDayCard } from './components/RideDayCard';
 import { RouteFields } from './components/RouteFields';
 import { WeekCalendar } from './components/WeekCalendar';
-import { isRideReady, NEW_RIDE } from './rideRules';
+import { isRideReady, MIN_RIDES, NEW_RIDE } from './rideRules';
 import { RIDE_SLOTS } from './rideSlots';
 import type {
   DateString,
@@ -29,8 +30,6 @@ import type {
   WeekDay,
   WeekPlan,
 } from './types';
-
-const MIN_RIDES = 3;
 
 const SCREEN_TOP_PADDING = 26;
 const SCREEN_BOTTOM_PADDING = 26;
@@ -47,6 +46,17 @@ function getMissingRidesLabel(missing: number): string {
   return missing === 1 ? 'Mai alege 1 cursă.' : `Mai alege ${missing} curse.`;
 }
 
+function toRidesBySlot(plan: WeekPlan | null): RidesBySlot {
+  if (!plan) return {};
+
+  return Object.fromEntries(
+    plan.rides.map(({ date, direction, ...times }) => [
+      getSlotKey(date, direction),
+      times,
+    ]),
+  );
+}
+
 export type PlanRidesScreenProps = {
   days: readonly WeekDay[];
   weekRange: string;
@@ -54,6 +64,12 @@ export type PlanRidesScreenProps = {
   defaultHomeAddress: string;
   /** Seats pre-filled on every new ride (from the parent's car). */
   defaultSeats: number;
+  /** Free seats in the parent's car: the most a ride can offer. */
+  maxSeats: number;
+  /** The plan already published for this week, which the parent can change. */
+  initialPlan: WeekPlan | null;
+  isPublishing: boolean;
+  publishError: string | null;
   onBack: () => void;
   onPublish: (plan: WeekPlan) => void;
 };
@@ -63,12 +79,20 @@ export function PlanRidesScreen({
   weekRange,
   defaultHomeAddress,
   defaultSeats,
+  maxSeats,
+  initialPlan,
+  isPublishing,
+  publishError,
   onBack,
   onPublish,
 }: PlanRidesScreenProps) {
   const insets = useSafeAreaInsets();
-  const [homeAddress, setHomeAddress] = useState(defaultHomeAddress);
-  const [ridesBySlot, setRidesBySlot] = useState<RidesBySlot>({});
+  const [homeAddress, setHomeAddress] = useState(
+    initialPlan?.homeAddress ?? defaultHomeAddress,
+  );
+  const [ridesBySlot, setRidesBySlot] = useState<RidesBySlot>(() =>
+    toRidesBySlot(initialPlan),
+  );
 
   const getRide = (date: DateString, direction: RideDirection) =>
     ridesBySlot[getSlotKey(date, direction)];
@@ -116,6 +140,7 @@ export function PlanRidesScreen({
     (ride) => ride.departureTime === null || ride.arrivalTime === null,
   );
   const canPublish =
+    !isPublishing &&
     trimmedAddress.length > 0 &&
     missingRides === 0 &&
     readyRides.length === plannedRides.length;
@@ -188,7 +213,7 @@ export function PlanRidesScreen({
             </AppText>
           </View>
           <AppText className="text-[13px] text-navy">
-            Cele 10 curse se împart între părinți, în funcție de
+            Cele {totalSlots} curse se împart între părinți, în funcție de
             disponibilitate.
           </AppText>
           <WeekCalendar
@@ -205,6 +230,7 @@ export function PlanRidesScreen({
             key={day.date}
             day={day}
             getRide={(direction) => getRide(day.date, direction)}
+            maxSeats={maxSeats}
             onChangeRide={(direction, changes) =>
               handleChangeRide(day.date, direction, changes)
             }
@@ -239,23 +265,37 @@ export function PlanRidesScreen({
               Completează adresa de acasă.
             </AppText>
           ) : null}
+          {publishError ? (
+            <AppText
+              accessibilityLiveRegion="assertive"
+              className="text-[13px] text-ink"
+            >
+              {publishError}
+            </AppText>
+          ) : null}
 
           <PressableScale
             accessibilityRole="button"
             accessibilityLabel="Publică cursele"
-            accessibilityState={{ disabled: !canPublish }}
+            accessibilityState={{ disabled: !canPublish, busy: isPublishing }}
             disabled={!canPublish}
             onPress={handlePublish}
             className={`h-14 flex-row items-center justify-center gap-2 rounded-full bg-navy ${
               canPublish ? '' : 'opacity-50'
             }`}
           >
-            <AppText className="text-[16px] text-mint">Publică cursele</AppText>
-            <ArrowRight
-              size={20}
-              color={colors.mint}
-              strokeWidth={ICON_STROKE_WIDTH}
-            />
+            <AppText className="text-[16px] text-mint">
+              {isPublishing ? 'Se publică…' : 'Publică cursele'}
+            </AppText>
+            {isPublishing ? (
+              <ActivityIndicator color={colors.mint} />
+            ) : (
+              <ArrowRight
+                size={20}
+                color={colors.mint}
+                strokeWidth={ICON_STROKE_WIDTH}
+              />
+            )}
           </PressableScale>
         </View>
       </ScrollView>

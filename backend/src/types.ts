@@ -53,3 +53,33 @@ export type ProfilParinte = {
   zileDisponibile: ZiSaptamana[];
   consimtamant: Consimtamant;
 };
+
+/** Dimineata: acasa → scoala. Dupa-amiaza: scoala → acasa. */
+export type DirectieCursa = 'spreScoala' | 'spreCasa';
+
+/** O cursa pe care parintele o poate face (nu inseamna ca o va face: decide algoritmul). */
+export type CursaDisponibila = {
+  /** Data cursei, "YYYY-MM-DD". */
+  data: string;
+  zi: ZiSaptamana;
+  directie: DirectieCursa;
+  /** "HH:mm": plecarea de acasa (spreScoala) sau de la scoala (spreCasa). */
+  oraPlecare: string;
+  /** "HH:mm": sosirea la scoala (spreScoala) sau acasa (spreCasa). */
+  oraSosire: string;
+  /** Locuri oferite copiilor, fara cel al soferului (cel mult vehicul.numarLocuri - 1). */
+  locuriDisponibile: number;
+};
+
+/** Documentul Firestore `parinti/{uid}/disponibilitati/{saptamana}`, scris din aplicatie. */
+export type Disponibilitate = {
+  parinteId: string;
+  /** Lunea saptamanii, "YYYY-MM-DD"; este si id-ul documentului. */
+  saptamana: string;
+  /** Adresa de plecare pentru aceasta saptamana (poate diferi de profil.adresaAcasa). */
+  adresaAcasa: string;
+  /** Cel putin CURSE_MIN curse, fara maxim (cel mult cele 10 sloturi ale saptamanii). */
+  curse: CursaDisponibila[];
+  /** Timestamp pus de server la fiecare publicare. */
+  actualizatLa: unknown;
+};
