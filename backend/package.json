@@ -1,0 +1,24 @@
+{
+  "name": "kiddoflux-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Firebase backend KiddoFlux: profiluri demo de parinti (Auth + Firestore).",
+  "scripts": {
+    "seed": "tsx scripts/seed.ts",
+    "test": "node --import tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "login": "firebase login",
+    "emulators": "firebase emulators:start --only auth,firestore",
+    "deploy:rules": "firebase deploy --only firestore:rules"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "firebase-tools": "^15.35.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

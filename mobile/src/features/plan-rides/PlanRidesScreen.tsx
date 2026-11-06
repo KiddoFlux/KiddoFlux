@@ -31,7 +31,6 @@ import type {
 } from './types';
 
 const MIN_RIDES = 3;
-const DEFAULT_HOME_ADDRESS = 'Str. Lalelelor 12';
 
 const SCREEN_TOP_PADDING = 26;
 const SCREEN_BOTTOM_PADDING = 26;
@@ -51,6 +50,10 @@ function getMissingRidesLabel(missing: number): string {
 export type PlanRidesScreenProps = {
   days: readonly WeekDay[];
   weekRange: string;
+  /** The parent's saved home address, which they can still change for this plan. */
+  defaultHomeAddress: string;
+  /** Seats pre-filled on every new ride (from the parent's car). */
+  defaultSeats: number;
   onBack: () => void;
   onPublish: (plan: WeekPlan) => void;
 };
@@ -58,11 +61,13 @@ export type PlanRidesScreenProps = {
 export function PlanRidesScreen({
   days,
   weekRange,
+  defaultHomeAddress,
+  defaultSeats,
   onBack,
   onPublish,
 }: PlanRidesScreenProps) {
   const insets = useSafeAreaInsets();
-  const [homeAddress, setHomeAddress] = useState(DEFAULT_HOME_ADDRESS);
+  const [homeAddress, setHomeAddress] = useState(defaultHomeAddress);
   const [ridesBySlot, setRidesBySlot] = useState<RidesBySlot>({});
 
   const getRide = (date: DateString, direction: RideDirection) =>
@@ -85,7 +90,9 @@ export function PlanRidesScreen({
 
     setRidesBySlot((current) => {
       const { [key]: existing, ...others } = current;
-      return existing ? others : { ...current, [key]: NEW_RIDE };
+      return existing
+        ? others
+        : { ...current, [key]: { ...NEW_RIDE, seats: defaultSeats } };
     });
   };
 
