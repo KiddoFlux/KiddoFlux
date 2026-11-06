@@ -17,6 +17,7 @@ import {
   MAP_THUMBNAIL_WIDTH,
   MapThumbnail,
 } from './MapThumbnail';
+import { PushingPerson } from './PushingPerson';
 
 const MENU_SCREEN_MARGIN = 16;
 const ROW_GAP = 8;
@@ -107,14 +108,18 @@ export function QuickActionsMenu({
 
   return (
     <View className="-ml-1 gap-[10px]">
-      <ActionPill
-        verb="Vezi"
-        noun="Program"
-        Icon={Clock}
-        width={rowOneWidth}
-        accessibilityLabel="Vezi programul"
-        onPress={onOpenSchedule}
-      />
+      {/* The pill leaves a little room on its right, where a tiny person pushes it. */}
+      <View className="flex-row items-center">
+        <ActionPill
+          verb="Vezi"
+          noun="Program"
+          Icon={Clock}
+          width={rowOneWidth}
+          accessibilityLabel="Vezi programul"
+          onPress={onOpenSchedule}
+        />
+        <PushingPerson />
+      </View>
 
       <View className="flex-row" style={{ gap: ROW_GAP }}>
         <MapPill onPress={onOpenMap} />
