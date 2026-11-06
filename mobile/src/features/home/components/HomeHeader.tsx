@@ -1,13 +1,19 @@
 import { Bell } from 'lucide-react-native';
-import { Pressable, View } from 'react-native';
+import { Image, Pressable, View } from 'react-native';
 
-import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { colors } from '@/theme/colors';
 import { ICON_STROKE_WIDTH } from '@/theme/icons';
 import { shadows } from '@/theme/shadows';
 
 import type { CurrentUser } from '../types';
+
+const logo = require('../../../../assets/logo-steel.png');
+
+// The image is 1001x160. These keep that ratio, and the file is far larger than
+// the size shown, so it stays sharp on high-density screens.
+const LOGO_WIDTH = 124;
+const LOGO_HEIGHT = Math.round((LOGO_WIDTH * 160) / 1001);
 
 type HomeHeaderProps = {
   user: CurrentUser;
@@ -23,23 +29,27 @@ export function HomeHeader({
   onOpenNotifications,
 }: HomeHeaderProps) {
   return (
-    <View className="flex-row items-center justify-between gap-3">
-      <View className="flex-1 flex-row items-center gap-3">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Deschide profilul"
-          onPress={onOpenProfile}
-        >
-          <Avatar initial={user.initial} />
-        </Pressable>
-        <View className="flex-1">
-          <AppText numberOfLines={1} className="text-[13px] text-navy">
-            {user.greeting}
-          </AppText>
-          <AppText numberOfLines={1} className="text-[22px] tracking-[-0.4px]">
-            {user.name}
-          </AppText>
-        </View>
+    <View className="flex-row items-center justify-between">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Deschide profilul"
+        onPress={onOpenProfile}
+      >
+        <Avatar initial={user.initial} />
+      </Pressable>
+
+      {/* Centered on the screen, whatever the widths of the two buttons. */}
+      <View
+        pointerEvents="none"
+        className="absolute inset-x-0 items-center justify-center"
+      >
+        <Image
+          source={logo}
+          accessibilityRole="image"
+          accessibilityLabel="KiddoFlux"
+          resizeMode="contain"
+          style={{ width: LOGO_WIDTH, height: LOGO_HEIGHT }}
+        />
       </View>
 
       <Pressable
