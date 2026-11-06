@@ -14,11 +14,8 @@ import {
   startOfWeek,
   toISODate,
 } from './dateUtils';
-import { getMockRides } from './mockData';
+import { getMockRides, mockMyChildrenIds } from './mockData';
 import { mergePublishedRides } from './publishedRides';
-
-// TODO: open ride details once that screen exists.
-const noop = () => {};
 
 /** Supplies the Calendar's data and actions. CalendarScreen only draws them. */
 export function CalendarPage() {
@@ -74,6 +71,7 @@ export function CalendarPage() {
   return (
     <CalendarScreen
       rides={rides}
+      myChildrenIds={mockMyChildrenIds}
       firstWeekDate={today}
       initialDate={getScheduleDate(today)}
       nextWeekNote={
@@ -85,7 +83,6 @@ export function CalendarPage() {
       // week keeps the whole week's "Nu pot conduce" buttons available to try.
       now={startOfWeek(today)}
       onPlanRides={() => router.push('/planifica')}
-      onOpenRide={noop}
       // TODO: save this to Firebase and send a push alert to the group's parents.
       // For now the ride is only marked on this device.
       onReportCannotDrive={(rideId) =>

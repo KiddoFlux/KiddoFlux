@@ -36,6 +36,9 @@ const DAVID: Child = {
 
 const ALL_CHILDREN = [MARIA, ANDREI, LUCA, SOFIA, DAVID];
 
+/** The current user's children. */
+export const mockMyChildrenIds: readonly string[] = [MARIA.id];
+
 const IOANA = 'Ioana P.';
 const MIHAI = 'Mihai D.';
 const ELENA = 'Elena R.';
