@@ -17,3 +17,9 @@ export const DOMENIU_EMAIL_AUTENTIFICARE = 'demo.kiddoflux.ro';
 
 /** Copiii sub aceasta inaltime au nevoie de scaun auto omologat (cerinte, sectiunea 6.2). */
 export const INALTIME_SCAUN_AUTO_CM = 135;
+
+/** Subcolectia `parinti/{uid}/disponibilitati/{saptamana}` cu planul saptamanal al parintelui. */
+export const SUBCOLECTIE_DISPONIBILITATI = 'disponibilitati';
+
+/** Minimum de curse oferite de un parinte pe saptamana (din 10: 5 zile × dimineata/dupa-amiaza). Fara maxim. */
+export const CURSE_MIN = 3;

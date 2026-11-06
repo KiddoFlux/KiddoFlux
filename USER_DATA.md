@@ -8,13 +8,12 @@ The app has a copy of the types in `mobile/src/types/profil.ts`. Field names are
 
 | Topic | Decision |
 | --- | --- |
-| Rides per parent per week | **minimum 3, maximum 5** (a week has 10 slots: 5 days × morning/afternoon) |
-| Offering more than the maximum | **Not allowed.** The form must stop at 5. |
+| Rides per parent per week | **minimum 3, no maximum** (a week has 10 slots: 5 days × morning/afternoon) |
 | When the algorithm runs | **Sunday, at the earliest** (planning closes Sunday 18:00, `PLANNING_DEADLINE_HOUR`) |
 | Classes | **Not decided.** The algorithm owner decides how classes are grouped. |
 | Shared data structure | A shared `data/` folder with types/templates that mirror Firebase (see section 6). |
 
-Status in code: only the minimum exists (`MIN_RIDES = 3` in `mobile/src/features/plan-rides/PlanRidesScreen.tsx`). The maximum of 5 is **not enforced yet**.
+Status in code: the minimum is enforced (`MIN_RIDES = 3` in `mobile/src/features/plan-rides/rideRules.ts`, and again in `backend/firestore.rules`). A parent can offer all 10 rides.
 
 ## 2. Where the data lives
 
@@ -115,18 +114,40 @@ Things the data shows that the algorithm will meet:
 
 | Missing | Notes |
 | --- | --- |
-| A parent's **weekly availability** (time spans per day) | The planning form `mobile/src/features/plan-rides/` collects it as `WeekPlan` but its `onPublish` saves nothing. This is the first feature to build. |
 | **Rides / schedule produced by the algorithm** | The Calendar (`mobile/src/features/calendar/`) still uses mock data (`CalendarRide` in `types.ts`). |
 | **Coordinates** of homes and school | Only text addresses exist. Pickup order and detours need `lat`/`lng`. |
 | **Groups** of families | Not stored anywhere yet. |
 | Notifications, alerts, handover events | Not built. |
 
-Existing type for what a parent plans (not stored yet), in `mobile/src/features/plan-rides/types.ts`:
+## 5b. Weekly availability: `parinti/{uid}/disponibilitati/{saptamana}`
+
+Written by the app when a parent taps **Publică cursele** (`mobile/src/features/plan-rides/planStorage.ts`).
+One document per parent per week; the document id is the Monday of that week. Publishing again replaces it.
+Types: `Disponibilitate` / `CursaDisponibila` in `backend/src/types.ts` (copy in `mobile/src/types/disponibilitate.ts`).
 
 ```ts
-PlannedRide { date: "YYYY-MM-DD", direction: 'toSchool' | 'toHome', departureTime, arrivalTime, seats }
-WeekPlan    { homeAddress: string, rides: PlannedRide[] }   // rides.length must be 3 to 5
+Disponibilitate {
+  parinteId: string            // "parinte-01", same as the parent's uid
+  saptamana: string            // "2026-11-09", the Monday; also the document id
+  adresaAcasa: string          // pickup address for this week (pre-filled from the profile, editable)
+  curse: CursaDisponibila[]    // at least 3, up to all 10 slots
+  actualizatLa: Timestamp      // server time of the last publish
+}
+
+CursaDisponibila {
+  data: string                 // "2026-11-11"
+  zi: 'luni' | 'marți' | 'miercuri' | 'joi' | 'vineri'
+  directie: 'spreScoala' | 'spreCasa'   // morning home → school / afternoon school → home
+  oraPlecare: string           // "07:30": leaves home (spreScoala) or school (spreCasa)
+  oraSosire: string            // "07:55": arrives at school (spreScoala) or home (spreCasa)
+  locuriDisponibile: number    // seats for children, 1 … vehicul.numarLocuri - 1
+}
 ```
+
+Rules (`backend/firestore.rules`): a parent can read and write only their own documents, only for next week,
+only before Sunday 18:00 (Romania time), with at least 3 valid rides and no more seats than their car has.
+To read every parent's plan for a week, the algorithm uses the Admin SDK:
+`collectionGroup('disponibilitati').where('saptamana', '==', '2026-11-09')`.
 
 ## 6. Proposal: the shared `data/` folder
 

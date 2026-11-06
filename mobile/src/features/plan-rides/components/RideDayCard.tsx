@@ -14,10 +14,16 @@ import { TimeField } from './TimeField';
 type RideDayCardProps = {
   day: WeekDay;
   getRide: (direction: RideDirection) => RideDraft | undefined;
+  maxSeats: number;
   onChangeRide: (direction: RideDirection, changes: Partial<RideDraft>) => void;
 };
 
-export function RideDayCard({ day, getRide, onChangeRide }: RideDayCardProps) {
+export function RideDayCard({
+  day,
+  getRide,
+  maxSeats,
+  onChangeRide,
+}: RideDayCardProps) {
   return (
     <View
       className="gap-4 rounded-[28px] bg-white p-[18px]"
@@ -70,6 +76,7 @@ export function RideDayCard({ day, getRide, onChangeRide }: RideDayCardProps) {
               />
               <SeatsField
                 value={ride.seats}
+                max={maxSeats}
                 dayName={a11yContext}
                 onChange={(seats) => onChangeRide(direction, { seats })}
               />
