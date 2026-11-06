@@ -52,7 +52,7 @@ export function NextRideCard({ ride, onPress }: NextRideCardProps) {
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={`Următoarea cursă ${ride.dayLabel}, plecare la ${ride.departureTime}, ${destination} la ${ride.arrivalTime}, copii: ${childNames}. ${driverLabel}. Deschide statusul live.`}
+      accessibilityLabel={`Următoarea cursă ${ride.dayLabel}, plecare la ${ride.departureTime}, ${destination} la ${ride.arrivalTime}, copii: ${childNames}. ${driverLabel}. Deschide calendarul.`}
       onPress={onPress}
       className="rounded-[28px] bg-navy"
       style={shadows.strong}
