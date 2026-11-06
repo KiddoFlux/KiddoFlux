@@ -4,7 +4,6 @@ import {
   House,
   Map as MapIcon,
   Settings,
-  User,
   type LucideIcon,
 } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
@@ -28,7 +27,6 @@ const TABS: readonly TabDefinition[] = [
   { routeName: 'harta', label: 'Hartă', Icon: MapIcon },
   { routeName: 'calendar', label: 'Calendar', Icon: Calendar },
   { routeName: 'setari', label: 'Setări', Icon: Settings },
-  { routeName: 'profil', label: 'Profil', Icon: User },
 ];
 
 export function TabBar({
