@@ -12,7 +12,7 @@ export type AcademicField = {
 };
 
 type AcademicSectionProps = {
-  /** Section heading. Also used for the parent and vehicle cards, which share this layout. */
+  /** Section heading. Also used for the student and vehicle cards, which share this layout. */
   title?: string;
   /** One detail row per entry, so more fields can be added without touching the layout. */
   fields: readonly AcademicField[];
