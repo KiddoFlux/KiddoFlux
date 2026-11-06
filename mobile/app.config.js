@@ -20,5 +20,12 @@ module.exports = ({ config }) => ({
     // Firebase's iOS SDK 13+ ships through Swift Package Manager only and needs
     // dynamic frameworks. See https://rnfirebase.io/ios-spm
     ['expo-build-properties', { ios: { useFrameworks: 'dynamic' } }],
+    // Only store and development builds need a key; Expo Go works without one.
+    [
+      'react-native-maps',
+      process.env.GOOGLE_MAPS_API_KEY
+        ? { androidGoogleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY }
+        : {},
+    ],
   ],
 });

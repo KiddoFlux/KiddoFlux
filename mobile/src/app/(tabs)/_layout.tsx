@@ -13,6 +13,7 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Acasă' }} />
+      <Tabs.Screen name="harta" options={{ title: 'Hartă' }} />
       <Tabs.Screen name="calendar" options={{ title: 'Calendar' }} />
     </Tabs>
   );
