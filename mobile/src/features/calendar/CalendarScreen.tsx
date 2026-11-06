@@ -12,6 +12,7 @@ import { toMinutes } from '@/utils/time';
 import { CalendarHeader } from './components/CalendarHeader';
 import { DayRideCard } from './components/DayRideCard';
 import { EmptyDayCard } from './components/EmptyDayCard';
+import { RideDetailsSheet } from './components/RideDetailsSheet';
 import { WeekNavigator } from './components/WeekNavigator';
 import { WeekOverviewButton } from './components/WeekOverviewButton';
 import { WeekOverviewCard } from './components/WeekOverviewCard';
@@ -36,6 +37,8 @@ const SCHOOL_DAYS_IN_WEEK = 5;
 
 export type CalendarScreenProps = {
   rides: readonly CalendarRide[];
+  /** The current user's children, highlighted in the ride details. */
+  myChildrenIds: readonly string[];
   /** Any day of the first of the two weeks the Calendar shows. */
   firstWeekDate: Date;
   initialDate: Date;
@@ -44,25 +47,28 @@ export type CalendarScreenProps = {
   /** Rides before this moment can no longer get a "Nu pot conduce" alert. */
   now: Date;
   onPlanRides: () => void;
-  onOpenRide: (rideId: string) => void;
   onReportCannotDrive: (rideId: string) => void;
   onTakeOverRide: (rideId: string) => void;
 };
 
 export function CalendarScreen({
   rides,
+  myChildrenIds,
   firstWeekDate,
   initialDate,
   nextWeekNote,
   now,
   onPlanRides,
-  onOpenRide,
   onReportCannotDrive,
   onTakeOverRide,
 }: CalendarScreenProps) {
   const insets = useSafeAreaInsets();
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [isOverviewOpen, setIsOverviewOpen] = useState(false);
+  const [openRideId, setOpenRideId] = useState<string | null>(null);
+
+  // Kept as an id so the details follow any change to the ride.
+  const openRide = rides.find((ride) => ride.id === openRideId);
 
   const isFirstWeek = isSameDay(
     startOfWeek(selectedDate),
@@ -190,7 +196,7 @@ export function CalendarScreen({
                 <DayRideCard
                   key={ride.id}
                   ride={ride}
-                  onPress={() => onOpenRide(ride.id)}
+                  onPress={() => setOpenRideId(ride.id)}
                   onCannotDrive={
                     isMyRide && isUpcoming
                       ? () => handleCannotDrive(ride.id)
@@ -209,6 +215,15 @@ export function CalendarScreen({
           )}
         </View>
       )}
+
+      {openRide ? (
+        <RideDetailsSheet
+          ride={openRide}
+          dateLabel={formatShortDate(selectedDate)}
+          myChildrenIds={myChildrenIds}
+          onClose={() => setOpenRideId(null)}
+        />
+      ) : null}
     </ScrollView>
   );
 }

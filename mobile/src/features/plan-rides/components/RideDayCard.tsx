@@ -32,6 +32,7 @@ export function RideDayCard({ day, getRide, onChangeRide }: RideDayCardProps) {
         if (!ride) return null;
 
         const a11yContext = `${day.fullName}, ${label}`;
+        const pickerSubtitle = `${day.fullName}, ${day.dayOfMonth} · ${routeLabel}`;
 
         return (
           <View key={direction} className="gap-2">
@@ -55,6 +56,7 @@ export function RideDayCard({ day, getRide, onChangeRide }: RideDayCardProps) {
                 value={ride.departureTime}
                 tone="steel"
                 accessibilityLabel={`Alege ora de plecare, ${a11yContext}`}
+                pickerSubtitle={pickerSubtitle}
                 onChange={(departureTime) =>
                   onChangeRide(direction, { departureTime })
                 }
@@ -64,6 +66,7 @@ export function RideDayCard({ day, getRide, onChangeRide }: RideDayCardProps) {
                 value={ride.arrivalTime}
                 tone="peach"
                 accessibilityLabel={`Alege ora de sosire, ${a11yContext}`}
+                pickerSubtitle={pickerSubtitle}
                 onChange={(arrivalTime) =>
                   onChangeRide(direction, { arrivalTime })
                 }
