@@ -12,10 +12,10 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: colors.mint },
       }}
     >
-      {/* Only Setări has a screen so far; add Acasă, Hartă and Calendar here as they land. */}
-      <Tabs.Screen name="setari" options={{ title: 'Setări' }} />
+      {/* Same order as the tab bar. Hartă has no screen yet, so it stays inert. */}
       <Tabs.Screen name="index" options={{ title: 'Acasă' }} />
       <Tabs.Screen name="calendar" options={{ title: 'Calendar' }} />
+      <Tabs.Screen name="setari" options={{ title: 'Setări' }} />
     </Tabs>
   );
 }
