@@ -4,6 +4,7 @@ import {
   House,
   Map as MapIcon,
   Settings,
+  User,
   type LucideIcon,
 } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
@@ -27,6 +28,7 @@ const TABS: readonly TabDefinition[] = [
   { routeName: 'harta', label: 'Hartă', Icon: MapIcon },
   { routeName: 'calendar', label: 'Calendar', Icon: Calendar },
   { routeName: 'setari', label: 'Setări', Icon: Settings },
+  { routeName: 'profil', label: 'Profil', Icon: User },
 ];
 
 export function TabBar({
@@ -50,6 +52,7 @@ export function TabBar({
     >
       {TABS.map(({ routeName, label, Icon }) => {
         // A tab without a route yet stays inert (Acasă, Hartă and Calendar for now).
+        // A tab stays inert until its route exists (Hartă and Profil for now).
         const route = state.routes.find((item) => item.name === routeName);
         const isActive = route !== undefined && route.key === activeRoute?.key;
 

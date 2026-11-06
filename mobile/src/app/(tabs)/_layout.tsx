@@ -14,6 +14,8 @@ export default function TabsLayout() {
     >
       {/* Only Setări has a screen so far; add Acasă, Hartă and Calendar here as they land. */}
       <Tabs.Screen name="setari" options={{ title: 'Setări' }} />
+      <Tabs.Screen name="index" options={{ title: 'Acasă' }} />
+      <Tabs.Screen name="calendar" options={{ title: 'Calendar' }} />
     </Tabs>
   );
 }

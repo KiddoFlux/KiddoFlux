@@ -17,6 +17,8 @@ module.exports = ({ config }) => ({
   plugins: [
     ...(config.plugins ?? []),
     '@react-native-firebase/app',
-    ['expo-build-properties', { ios: { useFrameworks: 'static' } }],
+    // Firebase's iOS SDK 13+ ships through Swift Package Manager only and needs
+    // dynamic frameworks. See https://rnfirebase.io/ios-spm
+    ['expo-build-properties', { ios: { useFrameworks: 'dynamic' } }],
   ],
 });
