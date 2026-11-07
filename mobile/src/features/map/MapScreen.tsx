@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { LayoutAnimation, View, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -10,95 +10,102 @@ import { AppText } from '@/components/ui/AppText';
 import { colors } from '@/theme/colors';
 import { shadows } from '@/theme/shadows';
 
-import { CarMarker } from './components/CarMarker';
+import type { DayOption } from './components/DaySelector';
 import { EmptyRidesCard } from './components/EmptyRidesCard';
-import { LiveStatusSheet } from './components/LiveStatusSheet';
-import { LiveTopBar } from './components/LiveTopBar';
+import { HomeMarker } from './components/HomeMarker';
 import {
   MapCanvas,
   type MapCanvasHandle,
   type MapLineSpec,
   type MapMarkerSpec,
 } from './components/MapCanvas';
-import { MapTopBar } from './components/MapTopBar';
-import { RideCarousel } from './components/RideCarousel';
-import { RideMarker } from './components/RideMarker';
-import { SchoolMarker } from './components/SchoolMarker';
-import { useLiveRide } from './hooks/useLiveRide';
-import { useLocationPermission } from './hooks/useLocationPermission';
-import { useMapMode } from './hooks/useMapMode';
-import type { LatLng, MapPeriod, MapRide } from './types';
+import { MapHeader } from './components/MapHeader';
+import { PICKUP_MARKER_ANCHOR, PickupMarker } from './components/PickupMarker';
+import { RideSheet } from './components/RideSheet';
+import { SCHOOL_MARKER_ANCHOR, SchoolMarker } from './components/SchoolMarker';
+import { useUserLocation } from './hooks/useUserLocation';
+import type {
+  CarpoolParent,
+  CarpoolRide,
+  LatLng,
+  MapPeriod,
+  RouteStop,
+  School,
+  SchoolDay,
+} from './types';
 import {
+  distanceMeters,
+  formatWeekLabel,
+  getDefaultDay,
   getDefaultPeriod,
-  getPeriodDirection,
-  involvesMe,
-  routeLengthMeters,
-  splitRoute,
+  getSchoolWeek,
+  isSameDate,
 } from './utils';
 
-const CLOCK_TICK_MS = 15_000;
-const CAROUSEL_GAP = 18;
+const SHEET_GAP = 14;
+const FIT_PADDING = 6;
+const FIT_SIDE_PADDING = 14;
 const NOTE_DURATION_MS = 2500;
-const CONFIRMED_DURATION_MS = 1500;
-const ARRIVED_LIVE_WINDOW_MS = 10 * 60_000;
+/** Closer than this, the user counts as being in the school's city. */
+const SAME_CITY_METERS = 25_000;
+/** Closer than this, the camera keeps the user in view along with the route. */
+const ROUTE_AREA_METERS = 4_000;
 
-const NO_ROUTE: readonly LatLng[] = [];
-/** Keeps the route clear of the top bar and the bottom sheet. */
-const LIVE_FIT_INSETS = { top: 130, right: 50, bottom: 440, left: 50 };
+const DAY_NAMES = ['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri'] as const;
+
+/** Animates the next layout change, so the panels grow and shrink smoothly. */
+function animateLayout() {
+  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+}
 
 export type MapScreenProps = {
-  rides: readonly MapRide[];
-  school: LatLng;
+  rides: readonly CarpoolRide[];
+  parents: readonly CarpoolParent[];
+  school: School;
+  /** Where the map opens before the user's location is known. */
+  defaultCenter: LatLng;
   myChildrenIds: readonly string[];
-  liveRoutes: Readonly<Record<string, readonly LatLng[]>>;
   /** Fixes the clock, for tests. Otherwise the real time is used. */
   nowMs?: number;
-  /** Where the live mock starts, from 0 to 1. */
-  liveStartProgress?: number;
-  onCallDriver: (ride: MapRide) => void;
-  onMessageDriver: (ride: MapRide) => void;
-  onConfirmArrival: (rideId: string) => void;
+  onCallDriver: (driver: CarpoolParent) => void;
   onPlanRides: () => void;
-  onSearch: () => void;
-  onOpenFilters: () => void;
-  onLiveModeChange: (isLive: boolean) => void;
 };
+
+function findRide(
+  rides: readonly CarpoolRide[],
+  day: SchoolDay,
+  period: MapPeriod,
+) {
+  return (
+    rides.find((ride) => ride.day === day && ride.period === period) ?? null
+  );
+}
 
 export function MapScreen({
   rides,
+  parents,
   school,
+  defaultCenter,
   myChildrenIds,
-  liveRoutes,
   nowMs,
-  liveStartProgress,
   onCallDriver,
-  onMessageDriver,
-  onConfirmArrival,
   onPlanRides,
-  onSearch,
-  onOpenFilters,
-  onLiveModeChange,
 }: MapScreenProps) {
   const insets = useSafeAreaInsets();
   const mapRef = useRef<MapCanvasHandle>(null);
-  const hasLocation = useLocationPermission();
+  const userLocation = useUserLocation();
 
-  const [clockMs, setClockMs] = useState(() => Date.now());
-  const now = nowMs ?? clockMs;
+  const [now] = useState(() => nowMs ?? Date.now());
+  const week = useMemo(() => getSchoolWeek(now), [now]);
+  const [day, setDay] = useState<SchoolDay>(() => getDefaultDay(now));
   const [period, setPeriod] = useState<MapPeriod>(() => getDefaultPeriod(now));
-  const [selectedRideId, setSelectedRideId] = useState<string | null>(null);
-  const [isLiveDismissed, setIsLiveDismissed] = useState(false);
-  const [openedLiveRideId, setOpenedLiveRideId] = useState<string | null>(null);
-  const [confirmingRideId, setConfirmingRideId] = useState<string | null>(null);
-  const [finishedRideIds, setFinishedRideIds] = useState<readonly string[]>([]);
-  const [note, setNote] = useState<string | null>(null);
+  const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
+  const [isHeaderExpanded, setIsHeaderExpanded] = useState(false);
+  const [isSheetExpanded, setIsSheetExpanded] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
-
-  // Keeps "Actualizat acum 2 min" current.
-  useEffect(() => {
-    const timer = setInterval(() => setClockMs(Date.now()), CLOCK_TICK_MS);
-    return () => clearInterval(timer);
-  }, []);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const [sheetHeight, setSheetHeight] = useState(0);
+  const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
     if (note === null) return undefined;
@@ -106,236 +113,251 @@ export function MapScreen({
     return () => clearTimeout(timer);
   }, [note]);
 
-  useEffect(() => {
-    if (confirmingRideId === null) return undefined;
-    const timer = setTimeout(() => {
-      setFinishedRideIds((current) => [...current, confirmingRideId]);
-      setOpenedLiveRideId(null);
-      setConfirmingRideId(null);
-    }, CONFIRMED_DURATION_MS);
-    return () => clearTimeout(timer);
-  }, [confirmingRideId]);
+  const ride = findRide(rides, day, period);
 
-  const openRides = useMemo(
-    () =>
-      rides.filter(
-        (ride) =>
-          ride.status !== 'cancelled' && !finishedRideIds.includes(ride.id),
-      ),
-    [rides, finishedRideIds],
-  );
+  const userCoordinate = userLocation.coordinate;
+  const userDistance = userCoordinate
+    ? distanceMeters(userCoordinate, school.coordinate)
+    : Infinity;
+  const isInSchoolCity = userDistance <= SAME_CITY_METERS;
+  const keepsUserInView = userDistance <= ROUTE_AREA_METERS;
+  const city = (isInSchoolCity && userLocation.city) || school.city;
 
-  // Live mode
-  const autoMode = useMapMode(openRides, myChildrenIds, now);
-  const liveRideId = openedLiveRideId ?? autoMode.liveRideId ?? null;
-  const liveRide = openRides.find((ride) => ride.id === liveRideId) ?? null;
-  const live = useLiveRide({
-    ride: liveRide,
-    route: liveRide ? (liveRoutes[liveRide.id] ?? NO_ROUTE) : NO_ROUTE,
-    startProgress: liveStartProgress,
-  });
+  const bottomOffset =
+    insets.bottom + TAB_BAR_BOTTOM_GAP + TAB_BAR_HEIGHT + SHEET_GAP;
 
-  const isArrivalOver =
-    live?.arrivedAtMs != null &&
-    now - live.arrivedAtMs > ARRIVED_LIVE_WINDOW_MS;
-  const canShowLive = live !== null && !isArrivalOver;
-  const isLive = canShowLive && !isLiveDismissed;
-  const liveRoute = live?.route;
-  const followedRideId = isLive ? live.rideId : null;
-
-  useEffect(() => {
-    onLiveModeChange(isLive);
-  }, [isLive, onLiveModeChange]);
-
-  // Browse mode
-  const periodRides = useMemo(
-    () =>
-      openRides.filter((ride) => ride.direction === getPeriodDirection(period)),
-    [openRides, period],
-  );
-  const foundIndex = periodRides.findIndex(
-    (ride) => ride.id === selectedRideId,
-  );
-  const selectedIndex = Math.max(foundIndex, 0);
-  const selectedRide = periodRides[selectedIndex] ?? null;
-  const selectedId = selectedRide?.id ?? null;
-  const selectedLocation = selectedRide?.approxPickup ?? null;
-
-  // The camera follows the selection, or fits the route while following a ride.
+  // Frames the whole route between the compact header and sheet. The open
+  // panels float over the map instead, so opening one never moves the camera.
   useEffect(() => {
     if (!isMapReady) return;
 
-    if (followedRideId !== null && liveRoute) {
-      mapRef.current?.fitTo(liveRoute, LIVE_FIT_INSETS);
-    } else if (selectedLocation) {
-      mapRef.current?.focusOn(selectedLocation);
-    } else {
-      mapRef.current?.focusOn(school);
+    if (!ride) {
+      mapRef.current?.focusOn(
+        isInSchoolCity && userCoordinate ? userCoordinate : school.coordinate,
+      );
+      return;
     }
-    // Moves only when the followed or selected ride changes, not on every update.
+
+    const points = [...ride.path, ...parents.map((parent) => parent.home)];
+    if (keepsUserInView && userCoordinate) points.push(userCoordinate);
+
+    mapRef.current?.fitTo(points, {
+      top: headerHeight + FIT_PADDING,
+      right: FIT_SIDE_PADDING,
+      bottom: bottomOffset + sheetHeight + FIT_PADDING,
+      left: FIT_SIDE_PADDING,
+    });
+    // Moves when the ride or the free space changes, not on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMapReady, followedRideId, selectedId]);
+  }, [isMapReady, ride?.id, headerHeight, sheetHeight, keepsUserInView]);
 
-  const handleOpenLive = (ride: MapRide) => {
-    const isUnderway =
-      ride.status === 'pickedUp' || ride.status === 'inProgress';
+  const days: DayOption[] = week.map((date, index) => {
+    const dayRide = findRide(rides, index as SchoolDay, period);
+    return {
+      date,
+      isToday: isSameDate(date, new Date(now)),
+      driver: dayRide
+        ? {
+            name: dayRide.driver.name,
+            initial: dayRide.driver.initial,
+            tone: dayRide.driver.tone,
+          }
+        : null,
+    };
+  });
 
-    if (isUnderway && involvesMe(ride, myChildrenIds)) {
-      setOpenedLiveRideId(ride.id);
-      setIsLiveDismissed(false);
+  const periodTimes = {
+    morning: findRide(rides, day, 'morning')?.departureTime,
+    afternoon: findRide(rides, day, 'afternoon')?.departureTime,
+  };
+
+  const handleChangeDay = (next: SchoolDay) => {
+    // Choosing a day is the panel's main job, so it closes right after.
+    animateLayout();
+    setDay(next);
+    setSelectedStopId(null);
+    setIsHeaderExpanded(false);
+  };
+
+  const toggleHeader = () => {
+    animateLayout();
+    setIsHeaderExpanded((current) => !current);
+  };
+
+  const toggleSheet = () => {
+    animateLayout();
+    setIsSheetExpanded((current) => !current);
+  };
+
+  const collapsePanels = () => {
+    if (!isHeaderExpanded && !isSheetExpanded) return;
+    animateLayout();
+    setIsHeaderExpanded(false);
+    setIsSheetExpanded(false);
+  };
+
+  const handleChangePeriod = (next: MapPeriod) => {
+    setPeriod(next);
+    setSelectedStopId(null);
+  };
+
+  const handleSelectStop = (stop: RouteStop) => {
+    setSelectedStopId(stop.id);
+    mapRef.current?.focusOn(stop.coordinate);
+  };
+
+  const handleLocate = () => {
+    if (userCoordinate) {
+      mapRef.current?.focusOn(userCoordinate);
+    } else if (userLocation.isGranted) {
+      setNote('Te căutăm pe hartă…');
     } else {
-      setNote('Status live apare când cursa pornește');
+      setNote('Activează locația ca să te găsim pe hartă');
     }
   };
 
-  const handleConfirmArrival = (rideId: string) => {
-    onConfirmArrival(rideId);
-    setConfirmingRideId(rideId);
+  const measure =
+    (setHeight: (height: number) => void) => (event: LayoutChangeEvent) =>
+      setHeight(Math.round(event.nativeEvent.layout.height));
+
+  const driver = ride?.driver ?? null;
+  const pickupStop = ride?.stops.find((stop) => stop.kind === 'pickup');
+
+  // Dotted: the other families walk their children to the driver's home.
+  const walkLines: MapLineSpec[] = driver
+    ? parents
+        .filter((parent) => parent.id !== driver.id)
+        .map((parent) => ({
+          id: `walk-${parent.id}`,
+          coordinates: [parent.home, driver.home],
+          color: colors.steel,
+          width: 3,
+          isDotted: true,
+        }))
+    : [];
+  const lines: MapLineSpec[] = ride
+    ? [
+        ...walkLines,
+        // A white casing under the route keeps it readable over any street.
+        {
+          id: 'route-casing',
+          coordinates: ride.path,
+          color: colors.white,
+          width: 9,
+        },
+        { id: 'route', coordinates: ride.path, color: colors.navy, width: 5 },
+      ]
+    : [];
+
+  const schoolMarker: MapMarkerSpec = {
+    id: 'school',
+    coordinate: school.coordinate,
+    accessibilityLabel: school.name,
+    anchor: SCHOOL_MARKER_ANCHOR,
+    zIndex: 2,
+    element: <SchoolMarker label={school.shortName} />,
   };
 
-  const split = useMemo(
-    () =>
-      live
-        ? splitRoute(live.route, routeLengthMeters(live.route) * live.progress)
-        : null,
-    [live],
-  );
-
-  const lines: MapLineSpec[] =
-    isLive && split
+  // The driver's home is the pickup point, so it gets the pin instead of an avatar.
+  const pickupMarkers: MapMarkerSpec[] =
+    driver && pickupStop
       ? [
           {
-            id: 'route-remaining',
-            coordinates: split.remaining,
-            color: colors.navy,
-            width: 3,
-            isDotted: true,
-          },
-          {
-            id: 'route-completed',
-            coordinates: split.completed,
-            color: colors.navy,
-            width: 5,
+            id: 'pickup',
+            coordinate: driver.home,
+            accessibilityLabel: `Preluare la ${pickupStop.time}, ${pickupStop.label}, ${pickupStop.address}`,
+            anchor: PICKUP_MARKER_ANCHOR,
+            zIndex: 3,
+            element: (
+              <PickupMarker
+                initial={driver.initial}
+                tone={driver.tone}
+                time={pickupStop.time}
+              />
+            ),
+            onPress: () => {
+              animateLayout();
+              setIsSheetExpanded(true);
+              handleSelectStop(pickupStop);
+            },
           },
         ]
       : [];
 
-  const schoolMarker: MapMarkerSpec = {
-    id: 'school',
-    coordinate: school,
-    accessibilityLabel: 'Școala',
-    element: <SchoolMarker />,
-  };
-  const markers: MapMarkerSpec[] = isLive
-    ? [
-        schoolMarker,
-        {
-          id: 'car',
-          coordinate: live.position,
-          accessibilityLabel: 'Mașina',
-          isMoving: true,
-          element: <CarMarker />,
-        },
-      ]
-    : [
-        schoolMarker,
-        ...periodRides.map((ride) => ({
-          id: ride.id,
-          coordinate: ride.approxPickup,
-          accessibilityLabel: `Zona de plecare, ${ride.driver.name}`,
-          element: <RideMarker isSelected={ride.id === selectedId} />,
-          onPress: () => setSelectedRideId(ride.id),
-        })),
-      ];
-
-  const myChildren =
-    liveRide?.children.filter((child) => myChildrenIds.includes(child.id)) ??
-    [];
+  const homeMarkers: MapMarkerSpec[] = parents
+    .filter((parent) => parent.id !== driver?.id)
+    .map((parent) => ({
+      id: `home-${parent.id}`,
+      coordinate: parent.home,
+      accessibilityLabel: `Acasă la ${parent.firstName}`,
+      element: <HomeMarker initial={parent.initial} tone={parent.tone} />,
+    }));
 
   return (
     <View className="flex-1 bg-mint">
       <MapCanvas
         ref={mapRef}
-        initialCenter={school}
-        markers={markers}
+        initialCenter={defaultCenter}
+        markers={[schoolMarker, ...homeMarkers, ...pickupMarkers]}
         lines={lines}
-        showsUserLocation={hasLocation}
+        showsUserLocation={userLocation.isGranted}
         onReady={() => setIsMapReady(true)}
+        onPressMap={collapsePanels}
       />
 
-      {isLive ? (
-        <>
-          <LiveTopBar
-            lastUpdatedAt={live.lastUpdatedAt}
-            nowMs={now}
-            onBack={() => setIsLiveDismissed(true)}
-          />
-          {liveRide ? (
-            <LiveStatusSheet
-              ride={liveRide}
-              live={live}
-              myChildren={myChildren}
-              isConfirmed={confirmingRideId === liveRide.id}
-              onClose={() => setIsLiveDismissed(true)}
-              onCallDriver={() => onCallDriver(liveRide)}
-              onMessageDriver={() => onMessageDriver(liveRide)}
-              onConfirmArrival={() => handleConfirmArrival(liveRide.id)}
-            />
-          ) : null}
-        </>
-      ) : (
-        <>
-          <MapTopBar
-            period={period}
-            onResumeLive={canShowLive ? () => setIsLiveDismissed(false) : null}
-            onChangePeriod={(next) => {
-              setPeriod(next);
-              setSelectedRideId(null);
-            }}
-            onSearch={onSearch}
-            onOpenFilters={onOpenFilters}
-          />
+      <MapHeader
+        city={city}
+        schoolName={school.name}
+        schoolShortName={school.shortName}
+        weekLabel={formatWeekLabel(week)}
+        dayLabel={`${DAY_NAMES[day]} ${week[day].getDate()}`}
+        days={days}
+        day={day}
+        period={period}
+        periodTimes={periodTimes}
+        isExpanded={isHeaderExpanded}
+        onToggleExpanded={toggleHeader}
+        onChangeDay={handleChangeDay}
+        onChangePeriod={handleChangePeriod}
+        onLocate={handleLocate}
+        onLayout={isHeaderExpanded ? undefined : measure(setHeaderHeight)}
+      />
 
+      <View
+        pointerEvents="box-none"
+        className="absolute inset-x-0 gap-2"
+        style={{ bottom: bottomOffset }}
+      >
+        {note ? (
           <View
-            pointerEvents="box-none"
-            className="absolute inset-x-0 gap-2"
-            style={{
-              bottom:
-                insets.bottom +
-                TAB_BAR_BOTTOM_GAP +
-                TAB_BAR_HEIGHT +
-                CAROUSEL_GAP,
-            }}
+            accessible
+            accessibilityLiveRegion="polite"
+            className="self-center rounded-full bg-ink px-4 py-2"
+            style={shadows.dark}
           >
-            {note ? (
-              <View
-                accessible
-                accessibilityLiveRegion="polite"
-                className="self-center rounded-full bg-ink px-4 py-2"
-                style={shadows.dark}
-              >
-                <AppText numberOfLines={1} className="text-[13px] text-mint">
-                  {note}
-                </AppText>
-              </View>
-            ) : null}
-
-            {periodRides.length > 0 ? (
-              <RideCarousel
-                rides={periodRides}
-                selectedIndex={selectedIndex}
-                onSelectIndex={(index) =>
-                  setSelectedRideId(periodRides[index]?.id ?? null)
-                }
-                onCallDriver={onCallDriver}
-                onOpenLive={handleOpenLive}
-              />
-            ) : (
-              <EmptyRidesCard onPlanRides={onPlanRides} />
-            )}
+            <AppText numberOfLines={1} className="text-[13px] text-mint">
+              {note}
+            </AppText>
           </View>
-        </>
-      )}
+        ) : null}
+
+        {ride ? (
+          <RideSheet
+            ride={ride}
+            dayLabel={DAY_NAMES[day]}
+            destinationName={school.shortName}
+            myChildrenIds={myChildrenIds}
+            isExpanded={isSheetExpanded}
+            onToggleExpanded={toggleSheet}
+            selectedStopId={selectedStopId}
+            onSelectStop={handleSelectStop}
+            onCallDriver={() => onCallDriver(ride.driver)}
+            onLayout={isSheetExpanded ? undefined : measure(setSheetHeight)}
+          />
+        ) : (
+          <EmptyRidesCard onPlanRides={onPlanRides} />
+        )}
+      </View>
     </View>
   );
 }

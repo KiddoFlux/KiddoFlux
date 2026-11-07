@@ -1,14 +1,12 @@
 import type { RideDirection } from '@/types/ride';
+import { toMinutes, type TimeString } from '@/utils/time';
 
-import type { LatLng, MapPeriod, MapRide } from './types';
+import type { LatLng, MapPeriod, SchoolDay } from './types';
 
 const EARTH_RADIUS_METERS = 6_371_000;
 const NOON_HOUR = 12;
-const MS_PER_MINUTE = 60_000;
-
-/** About 500 m. A fixed grid can't be averaged back to the real spot, unlike random offsets. */
-const LOCATION_GRID_DEGREES = 0.005;
-const DISPLAY_DISTANCE_STEP_METERS = 50;
+const MINUTES_PER_DAY = 24 * 60;
+const SCHOOL_DAYS = 5;
 
 function toRadians(degrees: number): number {
   return (degrees * Math.PI) / 180;
@@ -27,55 +25,7 @@ export function distanceMeters(from: LatLng, to: LatLng): number {
   return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(a));
 }
 
-export function routeLengthMeters(route: readonly LatLng[]): number {
-  return route.reduce(
-    (total, point, index) =>
-      index === 0 ? 0 : total + distanceMeters(route[index - 1], point),
-    0,
-  );
-}
-
-type RouteSplit = {
-  position: LatLng;
-  completed: LatLng[];
-  remaining: LatLng[];
-};
-
-/** Splits a route at the point `traveledMeters` along it. The route needs at least one point. */
-export function splitRoute(
-  route: readonly LatLng[],
-  traveledMeters: number,
-): RouteSplit {
-  let left = Math.max(traveledMeters, 0);
-
-  for (let index = 1; index < route.length; index += 1) {
-    const start = route[index - 1];
-    const end = route[index];
-    const length = distanceMeters(start, end);
-
-    if (left <= length) {
-      const fraction = length === 0 ? 0 : left / length;
-      const position = {
-        latitude: start.latitude + (end.latitude - start.latitude) * fraction,
-        longitude:
-          start.longitude + (end.longitude - start.longitude) * fraction,
-      };
-
-      return {
-        position,
-        completed: [...route.slice(0, index), position],
-        remaining: [position, ...route.slice(index)],
-      };
-    }
-
-    left -= length;
-  }
-
-  const last = route[route.length - 1];
-  return { position: last, completed: [...route], remaining: [last] };
-}
-
-/** For example "350 m" or "1,2 km". */
+/** For example "350 m" or "4,8 km". */
 export function formatDistance(meters: number): string {
   const rounded = Math.round(meters);
 
@@ -84,26 +34,14 @@ export function formatDistance(meters: number): string {
     : `${(rounded / 1000).toFixed(1).replace('.', ',')} km`;
 }
 
-/** A rounded distance, so exact measurements can't be used to locate a home. */
-export function formatApproximateDistance(meters: number): string {
-  const steps = Math.round(meters / DISPLAY_DISTANCE_STEP_METERS);
-  return formatDistance(Math.max(steps, 1) * DISPLAY_DISTANCE_STEP_METERS);
-}
-
-/** Snaps a point to a fixed grid, so markers never show a family's exact home. */
-export function approximateLocation(location: LatLng): LatLng {
-  const snap = (value: number) =>
-    Math.round(value / LOCATION_GRID_DEGREES) * LOCATION_GRID_DEGREES;
-
-  return {
-    latitude: snap(location.latitude),
-    longitude: snap(location.longitude),
-  };
-}
-
-/** Whole minutes from `fromMs` to `toMs`, never below zero. */
-export function minutesBetween(fromMs: number, toMs: number): number {
-  return Math.max(Math.floor((toMs - fromMs) / MS_PER_MINUTE), 0);
+/** Shifts a time by whole minutes, wrapping around midnight. */
+export function addMinutes(time: TimeString, minutes: number): TimeString {
+  const total =
+    (((toMinutes(time) + minutes) % MINUTES_PER_DAY) + MINUTES_PER_DAY) %
+    MINUTES_PER_DAY;
+  const hours = String(Math.floor(total / 60)).padStart(2, '0');
+  const rest = String(total % 60).padStart(2, '0');
+  return `${hours}:${rest}`;
 }
 
 export function getDefaultPeriod(nowMs: number): MapPeriod {
@@ -114,39 +52,64 @@ export function getPeriodDirection(period: MapPeriod): RideDirection {
   return period === 'morning' ? 'toSchool' : 'toHome';
 }
 
-export function involvesMe(
-  ride: MapRide,
-  myChildrenIds: readonly string[],
-): boolean {
-  return (
-    ride.driver.isCurrentUser ||
-    ride.children.some((child) => myChildrenIds.includes(child.id))
+function isWeekend(date: Date): boolean {
+  return date.getDay() === 0 || date.getDay() === 6;
+}
+
+/** Monday to Friday of this week, or of next week once the weekend starts. */
+export function getSchoolWeek(nowMs: number): Date[] {
+  const now = new Date(nowMs);
+  const daysSinceMonday = (now.getDay() + 6) % 7;
+  const offset = isWeekend(now) ? 7 - daysSinceMonday : -daysSinceMonday;
+
+  return Array.from(
+    { length: SCHOOL_DAYS },
+    (_day, index) =>
+      new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() + offset + index,
+      ),
   );
 }
 
-type DirectionCopy = {
-  /** "spre școală" */
-  toward: string;
-  /** "până la școală" */
-  until: string;
-  /** "La școală", the arrival tile's label. */
-  destinationLabel: string;
-  /** "la școală", as in "a ajuns la școală". */
-  arrivedAt: string;
-};
+const SHORT_MONTHS = [
+  'ian.',
+  'feb.',
+  'mar.',
+  'apr.',
+  'mai',
+  'iun.',
+  'iul.',
+  'aug.',
+  'sept.',
+  'oct.',
+  'nov.',
+  'dec.',
+] as const;
 
-export function getDirectionCopy(direction: RideDirection): DirectionCopy {
-  return direction === 'toSchool'
-    ? {
-        toward: 'spre școală',
-        until: 'până la școală',
-        destinationLabel: 'La școală',
-        arrivedAt: 'la școală',
-      }
-    : {
-        toward: 'spre casă',
-        until: 'până acasă',
-        destinationLabel: 'Acasă',
-        arrivedAt: 'acasă',
-      };
+/** For example "9–13 nov." or "30 nov. – 4 dec." */
+export function formatWeekLabel(days: readonly Date[]): string {
+  const first = days[0];
+  const last = days[days.length - 1];
+  const firstMonth = SHORT_MONTHS[first.getMonth()];
+  const lastMonth = SHORT_MONTHS[last.getMonth()];
+
+  return firstMonth === lastMonth
+    ? `${first.getDate()}–${last.getDate()} ${lastMonth}`
+    : `${first.getDate()} ${firstMonth} – ${last.getDate()} ${lastMonth}`;
+}
+
+export function isSameDate(first: Date, second: Date): boolean {
+  return (
+    first.getFullYear() === second.getFullYear() &&
+    first.getMonth() === second.getMonth() &&
+    first.getDate() === second.getDate()
+  );
+}
+
+/** Today on a school day, otherwise Monday. */
+export function getDefaultDay(nowMs: number): SchoolDay {
+  const now = new Date(nowMs);
+  return isWeekend(now) ? 0 : (((now.getDay() + 6) % 7) as SchoolDay);
 }

@@ -1,3 +1,4 @@
+import type { AvatarTone } from '@/components/ui/Avatar';
 import type { Child, RideDirection } from '@/types/ride';
 import type { TimeString } from '@/utils/time';
 
@@ -6,54 +7,56 @@ export type LatLng = {
   longitude: number;
 };
 
-export type RideStatus =
-  'scheduled' | 'pickedUp' | 'inProgress' | 'arrived' | 'cancelled';
-
 export type MapPeriod = 'morning' | 'afternoon';
 
-export type MapDriver = {
+/** Monday is 0, Friday is 4. */
+export type SchoolDay = 0 | 1 | 2 | 3 | 4;
+
+export type School = {
+  name: string;
+  /** "Fram", where space is tight, like the map pin. */
+  shortName: string;
+  address: string;
+  city: string;
+  coordinate: LatLng;
+};
+
+export type CarpoolParent = {
   id: string;
   name: string;
+  /** "Ioana", used in "Acasă la Ioana". */
+  firstName: string;
   initial: string;
+  tone: AvatarTone;
   phone: string;
-  isCurrentUser: boolean;
+  car: string;
+  address: string;
+  home: LatLng;
+  children: readonly Child[];
 };
 
-export type MapRide = {
+export type RouteStop = {
   id: string;
+  /** "pickup" is the driver's home, where the children get in or out. */
+  kind: 'pickup' | 'school';
+  label: string;
+  address: string;
+  coordinate: LatLng;
+  time: TimeString;
+};
+
+export type CarpoolRide = {
+  id: string;
+  day: SchoolDay;
+  period: MapPeriod;
   direction: RideDirection;
-  status: RideStatus;
+  driver: CarpoolParent;
+  /** Always two: where the ride starts and where it ends. */
+  stops: readonly RouteStop[];
+  children: readonly Child[];
+  path: readonly LatLng[];
+  distanceMeters: number;
+  durationMinutes: number;
   departureTime: TimeString;
   arrivalTime: TimeString;
-  driver: MapDriver;
-  seatsTaken: number;
-  seatsTotal: number;
-  children: readonly Child[];
-  /** A rounded area, never a family's exact address. */
-  approxPickup: LatLng;
-  distanceFromMeMeters: number;
-  /** When the ride arrived, in milliseconds since 1970. Null until then. */
-  arrivedAtMs: number | null;
 };
-
-export type LiveRideState = {
-  rideId: string;
-  position: LatLng;
-  route: readonly LatLng[];
-  /** From 0 to 1. */
-  progress: number;
-  distanceRemainingMeters: number;
-  pickedUpAt: TimeString;
-  eta: TimeString;
-  targetArrival: TimeString;
-  status: RideStatus;
-  /** In milliseconds since 1970. */
-  lastUpdatedAt: number;
-  /** When the car arrived. Null until then. */
-  arrivedAt: TimeString | null;
-  arrivedAtMs: number | null;
-};
-
-export type MapMode =
-  | { mode: 'browse'; liveRideId?: undefined }
-  | { mode: 'live'; liveRideId: string };
