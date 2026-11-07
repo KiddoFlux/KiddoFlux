@@ -1,12 +1,5 @@
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
-import { StyleSheet } from 'react-native';
+import { forwardRef, useImperativeHandle, useRef, type ReactNode } from 'react';
+import { PixelRatio, Platform, StyleSheet } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 
 import { MAP_STYLE } from '../mapStyle';
@@ -14,18 +7,19 @@ import type { LatLng } from '../types';
 
 // The only file that imports the map library, so the provider can be swapped here.
 
-const INITIAL_DELTA = 0.04;
-const CAMERA_DELTA = 0.025;
+const INITIAL_DELTA = 0.03;
+const CAMERA_DELTA = 0.012;
 const CAMERA_DURATION_MS = 450;
-const MARKER_GLIDE_MS = 1000;
+const CENTER_ANCHOR = { x: 0.5, y: 0.5 };
 
 export type MapMarkerSpec = {
   id: string;
   coordinate: LatLng;
   accessibilityLabel: string;
   element: ReactNode;
-  /** Glides to new coordinates instead of jumping. */
-  isMoving?: boolean;
+  /** Where the coordinate sits on the element, from 0 to 1. Centred by default. */
+  anchor?: { x: number; y: number };
+  zIndex?: number;
   onPress?: () => void;
 };
 
@@ -55,49 +49,20 @@ type MapCanvasProps = {
   lines?: readonly MapLineSpec[];
   showsUserLocation: boolean;
   onReady?: () => void;
+  /** A tap on the map itself, not on a marker. */
+  onPressMap?: () => void;
 };
-
-function MovingMarker({ marker }: { marker: MapMarkerSpec }) {
-  const [coordinate, setCoordinate] = useState(marker.coordinate);
-  const latest = useRef(marker.coordinate);
-  const { latitude, longitude } = marker.coordinate;
-
-  useEffect(() => {
-    const from = latest.current;
-    const startedAt = Date.now();
-    let frame: number;
-
-    const step = () => {
-      const fraction = Math.min((Date.now() - startedAt) / MARKER_GLIDE_MS, 1);
-      const next = {
-        latitude: from.latitude + (latitude - from.latitude) * fraction,
-        longitude: from.longitude + (longitude - from.longitude) * fraction,
-      };
-
-      latest.current = next;
-      setCoordinate(next);
-      if (fraction < 1) frame = requestAnimationFrame(step);
-    };
-
-    frame = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frame);
-  }, [latitude, longitude]);
-
-  return (
-    <Marker
-      coordinate={coordinate}
-      accessibilityLabel={marker.accessibilityLabel}
-      anchor={{ x: 0.5, y: 0.5 }}
-      onPress={marker.onPress}
-    >
-      {marker.element}
-    </Marker>
-  );
-}
 
 export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(
   function MapCanvas(
-    { initialCenter, markers, lines = [], showsUserLocation, onReady },
+    {
+      initialCenter,
+      markers,
+      lines = [],
+      showsUserLocation,
+      onReady,
+      onPressMap,
+    },
     ref,
   ) {
     const mapRef = useRef<MapView>(null);
@@ -114,8 +79,15 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(
         );
       },
       fitTo: (points, insets) => {
+        // Android reads the padding in physical pixels, iOS in points.
+        const scale = Platform.OS === 'android' ? PixelRatio.get() : 1;
         mapRef.current?.fitToCoordinates([...points], {
-          edgePadding: insets,
+          edgePadding: {
+            top: insets.top * scale,
+            right: insets.right * scale,
+            bottom: insets.bottom * scale,
+            left: insets.left * scale,
+          },
           animated: true,
         });
       },
@@ -132,12 +104,17 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(
         }}
         customMapStyle={MAP_STYLE}
         showsUserLocation={showsUserLocation}
+        showsMyLocationButton={false}
         showsPointsOfInterests={false}
         showsCompass={false}
         toolbarEnabled={false}
         rotateEnabled={false}
         pitchEnabled={false}
         onMapReady={onReady}
+        onPress={(event) => {
+          // Android also reports marker taps here.
+          if (event.nativeEvent.action !== 'marker-press') onPressMap?.();
+        }}
       >
         {lines.map((line) => (
           <Polyline
@@ -151,21 +128,18 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(
           />
         ))}
 
-        {markers.map((marker) =>
-          marker.isMoving ? (
-            <MovingMarker key={marker.id} marker={marker} />
-          ) : (
-            <Marker
-              key={marker.id}
-              coordinate={marker.coordinate}
-              accessibilityLabel={marker.accessibilityLabel}
-              anchor={{ x: 0.5, y: 0.5 }}
-              onPress={marker.onPress}
-            >
-              {marker.element}
-            </Marker>
-          ),
-        )}
+        {markers.map((marker) => (
+          <Marker
+            key={marker.id}
+            coordinate={marker.coordinate}
+            accessibilityLabel={marker.accessibilityLabel}
+            anchor={marker.anchor ?? CENTER_ANCHOR}
+            zIndex={marker.zIndex}
+            onPress={marker.onPress}
+          >
+            {marker.element}
+          </Marker>
+        ))}
       </MapView>
     );
   },

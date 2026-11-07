@@ -1,54 +1,37 @@
-import { router, useNavigation } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { router } from 'expo-router';
+import { useState } from 'react';
 import { Alert, Linking } from 'react-native';
 
 import { MapScreen } from './MapScreen';
 import {
-  MOCK_MAP_SCENARIO,
-  getMockMapData,
+  DEFAULT_CENTER,
+  getMockRides,
   mockMyChildrenIds,
+  mockParents,
   mockSchool,
 } from './mockData';
-import type { MapRide } from './types';
+import type { CarpoolParent } from './types';
 
-// TODO: connect these once the screens and the Firebase backend exist.
-const noop = () => {};
-
-function callDriver(ride: MapRide) {
-  Linking.openURL(`tel:${ride.driver.phone}`).catch(() => {
+function callDriver(driver: CarpoolParent) {
+  Linking.openURL(`tel:${driver.phone}`).catch(() => {
     Alert.alert('Nu am putut iniția apelul', 'Încearcă din nou.');
   });
 }
 
 /** Supplies the map's data and actions. MapScreen only draws them. */
 export function MapPage() {
-  const navigation = useNavigation();
-  const [data] = useState(() => getMockMapData(MOCK_MAP_SCENARIO, Date.now()));
-
-  // TabBar hides itself when a screen sets display: 'none'.
-  const handleLiveModeChange = useCallback(
-    (isLive: boolean) => {
-      navigation.setOptions({
-        tabBarStyle: isLive ? { display: 'none' } : undefined,
-      });
-    },
-    [navigation],
-  );
+  // TODO: load the group's weekly schedule from Firebase once the backend exists.
+  const [rides] = useState(getMockRides);
 
   return (
     <MapScreen
-      rides={data.rides}
+      rides={rides}
+      parents={mockParents}
       school={mockSchool}
+      defaultCenter={DEFAULT_CENTER}
       myChildrenIds={mockMyChildrenIds}
-      liveRoutes={data.liveRoutes}
-      liveStartProgress={data.liveStartProgress}
       onCallDriver={callDriver}
-      onMessageDriver={noop}
-      onConfirmArrival={noop}
       onPlanRides={() => router.push('/planifica')}
-      onSearch={noop}
-      onOpenFilters={noop}
-      onLiveModeChange={handleLiveModeChange}
     />
   );
 }

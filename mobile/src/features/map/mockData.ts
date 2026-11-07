@@ -1,23 +1,33 @@
 import type { Child } from '@/types/ride';
-import { dateToTime } from '@/utils/time';
+import type { TimeString } from '@/utils/time';
 
-import type { LatLng, MapDriver, MapRide } from './types';
-import { approximateLocation } from './utils';
+import { SIBIU_ROUTES } from './sibiuRoutes';
+import type {
+  CarpoolParent,
+  CarpoolRide,
+  LatLng,
+  MapPeriod,
+  RouteStop,
+  School,
+  SchoolDay,
+} from './types';
+import { addMinutes, getPeriodDirection } from './utils';
 
-/**
- * Change this to test the screen, then reload the app:
- * - 'live': opens following Maria's ride
- * - 'arrived': the same ride, a few seconds from arriving
- * - 'late': the same ride, with the ETA after the target time
- * - 'browse': no ride in progress, so it opens on the carousel
- * - 'empty': no rides at all
- */
-export type MockMapScenario = 'live' | 'arrived' | 'late' | 'browse' | 'empty';
-export const MOCK_MAP_SCENARIO: MockMapScenario = 'live';
+// MOCK: three neighbouring families on Strada Negovanu. Mihai drives every day,
+// and the other children are walked to his home at Negovanu 2.
+// Names and phone numbers are invented placeholders, not real people's.
 
-const MS_PER_MINUTE = 60_000;
+/** Sibiu's centre, used until the user's location is known. */
+export const DEFAULT_CENTER: LatLng = { latitude: 45.7983, longitude: 24.1469 };
 
-export const mockSchool: LatLng = { latitude: 44.4378, longitude: 26.0963 };
+export const mockSchool: School = {
+  name: 'Fram Early Learning Center',
+  shortName: 'Fram',
+  address: 'Calea Dumbrăvii 147',
+  city: 'Sibiu',
+  coordinate: { latitude: 45.77141, longitude: 24.13942 },
+};
+
 export const mockMyChildrenIds: readonly string[] = ['child-1'];
 
 const MARIA: Child = {
@@ -45,159 +55,123 @@ const DAVID: Child = {
   tone: 'sage',
 };
 
-// The numbers below are invented placeholders, not real people's.
-const IOANA: MapDriver = {
-  id: 'parent-1',
-  name: 'Ioana P.',
+const IOANA: CarpoolParent = {
+  id: 'parent-ioana',
+  name: 'Ioana Popescu',
+  firstName: 'Ioana',
   initial: 'I',
+  tone: 'peach',
   phone: '+40700000001',
-  isCurrentUser: false,
+  car: 'Dacia Duster albastră',
+  address: 'Str. Negovanu 9',
+  home: { latitude: 45.78353, longitude: 24.17298 },
+  children: [MARIA],
 };
-const MIHAI: MapDriver = {
-  id: 'parent-2',
-  name: 'Mihai D.',
+const MIHAI: CarpoolParent = {
+  id: 'parent-mihai',
+  name: 'Mihai Dumitrescu',
+  firstName: 'Mihai',
   initial: 'M',
+  tone: 'steel',
   phone: '+40700000002',
-  isCurrentUser: false,
+  car: 'Skoda Octavia gri',
+  address: 'Str. Negovanu 2',
+  home: { latitude: 45.78309, longitude: 24.17212 },
+  children: [LUCA],
 };
-const ELENA: MapDriver = {
-  id: 'parent-3',
-  name: 'Elena R.',
+const ELENA: CarpoolParent = {
+  id: 'parent-elena',
+  name: 'Elena Radu',
+  firstName: 'Elena',
   initial: 'E',
+  tone: 'sage',
   phone: '+40700000003',
-  isCurrentUser: false,
-};
-const DAN: MapDriver = {
-  id: 'parent-4',
-  name: 'Dan C.',
-  initial: 'D',
-  phone: '+40700000004',
-  isCurrentUser: false,
+  car: 'Toyota Corolla albă',
+  address: 'Str. Negovanu 16',
+  home: { latitude: 45.78402, longitude: 24.17395 },
+  children: [SOFIA, DAVID],
 };
 
-const LIVE_RIDE_ID = 'ride-morning-1';
+export const mockParents: readonly CarpoolParent[] = [IOANA, MIHAI, ELENA];
 
-/** From the pickup area to the school. */
-const LIVE_ROUTE: readonly LatLng[] = [
-  { latitude: 44.4235, longitude: 26.0855 },
-  { latitude: 44.4258, longitude: 26.0872 },
-  { latitude: 44.4272, longitude: 26.0905 },
-  { latitude: 44.4301, longitude: 26.0918 },
-  { latitude: 44.4323, longitude: 26.0941 },
-  { latitude: 44.4349, longitude: 26.0948 },
-  mockSchool,
-];
+const ALL_CHILDREN = mockParents.flatMap((parent) => parent.children);
 
-const START_PROGRESS: Record<MockMapScenario, number> = {
-  live: 0.15,
-  arrived: 0.97,
-  late: 0.15,
-  browse: 0,
-  empty: 0,
-};
+/** The only parent who drives, both ways, every school day. */
+const DRIVER = MIHAI;
+const SCHOOL_DAYS: readonly SchoolDay[] = [0, 1, 2, 3, 4];
 
-function minutesFromNow(nowMs: number, minutes: number) {
-  return dateToTime(new Date(nowMs + minutes * MS_PER_MINUTE));
+const SCHOOL_STARTS_AT: TimeString = '07:50';
+const SCHOOL_PICKUP_AT: TimeString = '16:30';
+/** Time for every child to get in at the driver's home. */
+const BOARDING_MINUTES = 3;
+
+/** The other children walk to the driver's home and get in there. */
+function pickupStop(driver: CarpoolParent, time: TimeString): RouteStop {
+  return {
+    id: `pickup-${driver.id}`,
+    kind: 'pickup',
+    label: `Acasă la ${driver.firstName}`,
+    address: driver.address,
+    coordinate: driver.home,
+    time,
+  };
 }
 
-export function getMockMapData(scenario: MockMapScenario, nowMs: number) {
-  const isLiveScenario = scenario !== 'browse' && scenario !== 'empty';
-  // With a 1-minute target, the ride's real ETA of a few minutes runs late.
-  const targetMinutes = scenario === 'late' ? 1 : 15;
+function schoolStop(time: TimeString): RouteStop {
+  return {
+    id: 'school',
+    kind: 'school',
+    label: mockSchool.name,
+    address: mockSchool.address,
+    coordinate: mockSchool.coordinate,
+    time,
+  };
+}
 
-  const rides: MapRide[] = [
-    {
-      id: LIVE_RIDE_ID,
-      direction: 'toSchool',
-      status: isLiveScenario ? 'inProgress' : 'scheduled',
-      departureTime: isLiveScenario ? minutesFromNow(nowMs, -5) : '07:35',
-      arrivalTime: isLiveScenario
-        ? minutesFromNow(nowMs, targetMinutes)
-        : '08:00',
-      driver: IOANA,
-      seatsTaken: 3,
-      seatsTotal: 4,
-      children: [MARIA, LUCA],
-      approxPickup: approximateLocation({
-        latitude: 44.4235,
-        longitude: 26.0855,
-      }),
-      distanceFromMeMeters: 350,
-      arrivedAtMs: null,
-    },
-    {
-      id: 'ride-morning-2',
-      direction: 'toSchool',
-      status: 'scheduled',
-      departureTime: '07:30',
-      arrivalTime: '08:00',
-      driver: MIHAI,
-      seatsTaken: 2,
-      seatsTotal: 4,
-      children: [SOFIA, DAVID],
-      approxPickup: approximateLocation({
-        latitude: 44.4301,
-        longitude: 26.1052,
-      }),
-      distanceFromMeMeters: 720,
-      arrivedAtMs: null,
-    },
-    {
-      id: 'ride-morning-3',
-      direction: 'toSchool',
-      status: 'scheduled',
-      departureTime: '07:40',
-      arrivalTime: '08:00',
-      driver: ELENA,
-      seatsTaken: 1,
-      seatsTotal: 3,
-      children: [DAVID],
-      approxPickup: approximateLocation({
-        latitude: 44.4449,
-        longitude: 26.0851,
-      }),
-      distanceFromMeMeters: 1240,
-      arrivedAtMs: null,
-    },
-    {
-      id: 'ride-afternoon-1',
-      direction: 'toHome',
-      status: 'scheduled',
-      departureTime: '14:30',
-      arrivalTime: '15:00',
-      driver: DAN,
-      seatsTaken: 3,
-      seatsTotal: 4,
-      children: [MARIA, SOFIA],
-      approxPickup: approximateLocation({
-        latitude: 44.4252,
-        longitude: 26.0998,
-      }),
-      distanceFromMeMeters: 480,
-      arrivedAtMs: null,
-    },
-    {
-      id: 'ride-afternoon-2',
-      direction: 'toHome',
-      status: 'scheduled',
-      departureTime: '14:45',
-      arrivalTime: '15:15',
-      driver: ELENA,
-      seatsTaken: 2,
-      seatsTotal: 3,
-      children: [LUCA, DAVID],
-      approxPickup: approximateLocation({
-        latitude: 44.4402,
-        longitude: 26.1104,
-      }),
-      distanceFromMeMeters: 950,
-      arrivedAtMs: null,
-    },
-  ];
+function buildRide(
+  day: SchoolDay,
+  period: MapPeriod,
+  driver: CarpoolParent,
+): CarpoolRide {
+  const route = SIBIU_ROUTES[period];
+  const drivingMinutes = Math.ceil(route.durationSeconds / 60);
+  const isMorning = period === 'morning';
+  // The road ends at the kerb; the two ends join it to the doors on the map.
+  const roadPath = route.path.map(([latitude, longitude]) => ({
+    latitude,
+    longitude,
+  }));
+
+  // In the morning the time counts from when the children gather, before boarding.
+  const durationMinutes = drivingMinutes + (isMorning ? BOARDING_MINUTES : 0);
+  const departureTime = isMorning
+    ? addMinutes(SCHOOL_STARTS_AT, -durationMinutes)
+    : SCHOOL_PICKUP_AT;
+  const arrivalTime = addMinutes(departureTime, durationMinutes);
 
   return {
-    rides: scenario === 'empty' ? [] : rides,
-    liveRoutes: { [LIVE_RIDE_ID]: LIVE_ROUTE },
-    liveStartProgress: START_PROGRESS[scenario],
+    id: `${day}-${period}`,
+    day,
+    period,
+    direction: getPeriodDirection(period),
+    driver,
+    stops: isMorning
+      ? [pickupStop(driver, departureTime), schoolStop(arrivalTime)]
+      : [schoolStop(departureTime), pickupStop(driver, arrivalTime)],
+    children: ALL_CHILDREN,
+    path: isMorning
+      ? [driver.home, ...roadPath, mockSchool.coordinate]
+      : [mockSchool.coordinate, ...roadPath, driver.home],
+    distanceMeters: route.distanceMeters,
+    durationMinutes,
+    departureTime,
+    arrivalTime,
   };
+}
+
+export function getMockRides(): CarpoolRide[] {
+  return SCHOOL_DAYS.flatMap((day) => [
+    buildRide(day, 'morning', DRIVER),
+    buildRide(day, 'afternoon', DRIVER),
+  ]);
 }
