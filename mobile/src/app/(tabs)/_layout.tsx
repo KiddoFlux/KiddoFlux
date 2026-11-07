@@ -10,6 +10,8 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         sceneStyle: { backgroundColor: colors.mint },
+        // Pages glide a little to the side and fade, instead of cutting.
+        animation: 'shift',
       }}
     >
       {/* Same order as the tab bar. Hartă has no screen yet, so it stays inert. */}
