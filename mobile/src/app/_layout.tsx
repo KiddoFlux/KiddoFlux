@@ -38,13 +38,25 @@ function AppNavigator() {
     >
       <Stack.Protected guard={isSignedIn}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="planifica" />
-        <Stack.Screen name="profil" />
-        <Stack.Screen name="despre" />
+        <Stack.Screen
+          name="planifica"
+          options={{ animation: 'fade_from_bottom', animationDuration: 260 }}
+        />
+        <Stack.Screen
+          name="profil"
+          options={{ animation: 'slide_from_right', animationDuration: 280 }}
+        />
+        <Stack.Screen
+          name="despre"
+          options={{ animation: 'slide_from_right', animationDuration: 280 }}
+        />
       </Stack.Protected>
 
       <Stack.Protected guard={!isSignedIn}>
-        <Stack.Screen name="login" />
+        <Stack.Screen
+          name="login"
+          options={{ animation: 'fade', animationDuration: 250 }}
+        />
       </Stack.Protected>
     </Stack>
   );
