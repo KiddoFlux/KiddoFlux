@@ -4,16 +4,20 @@ For the developers building the availability calendar and the weekly matching al
 Source of truth: `backend/src/types.ts` (types) and `backend/src/data/profiluri.ts` (the 15 demo parents).
 The app has a copy of the types in `mobile/src/types/profil.ts`. Field names are in Romanian, as in Firebase.
 
+Product context (updated 8 Nov 2026): the first customer is the private school, which pays a licence; parents pay nothing. Public schools through municipalities come later. Both use the same rota engine.
+
 ## 1. Decisions already made
 
 | Topic | Decision |
 | --- | --- |
-| Rides per parent per week | **minimum 3, no maximum** (a week has 10 slots: 5 days × morning/afternoon) |
+| Rides per parent per week | **minimum 3, maximum 5** (a week has 10 slots: 5 days × morning/afternoon) |
+| Offering more than the maximum | **Not allowed.** The form must stop at 5. |
+| Fairness | Between the drivers of one group, the difference is **at most one ride per week** (pitch deck) |
 | When the algorithm runs | **Sunday, at the earliest** (planning closes Sunday 18:00, `PLANNING_DEADLINE_HOUR`) |
-| Classes | **Not decided.** The algorithm owner decides how classes are grouped. |
+| Who is in a group | Families from the **same class or school** only (pitch deck). Whether a group is limited to one class is **not decided**: the algorithm owner decides how classes are grouped. |
 | Shared data structure | A shared `data/` folder with types/templates that mirror Firebase (see section 6). |
 
-Status in code: the minimum is enforced (`MIN_RIDES = 3` in `mobile/src/features/plan-rides/rideRules.ts`, and again in `backend/firestore.rules`). A parent can offer all 10 rides.
+Status in code: only the minimum exists (`MIN_RIDES = 3` in `mobile/src/features/plan-rides/PlanRidesScreen.tsx`). The maximum of 5 is **not enforced yet**.
 
 ## 2. Where the data lives
 
@@ -105,7 +109,7 @@ Login for any of them: the phone below + code `123456`.
 | parinte-15 | 0700 100 015 | Gabriel Neagu | Victor (a III-a) | 141 cm | Honda CR-V | 5 / 2 | luni, joi | da |
 
 Things the data shows that the algorithm will meet:
-- **Classes in the data:** pregătitoare (1), a I-a (1), a II-a (1), a III-a (6), a IV-a (6). Class-based pools are small, so decide early whether classes can be mixed.
+- **Classes in the data:** pregătitoare (1), a I-a (1), a II-a (1), a III-a (6), a IV-a (6). Class-based pools are small, so decide early whether classes can be mixed. The pitch deck only promises "same class or school".
 - **Child seats:** 5 children need one (parinte-01, 04, 08, 12, 14). Cars with `locuriScaunCopii = 0` are parinte-05 and 11, so they can't carry such a child.
 - **Edge case:** parinte-11's child is exactly 135 cm. The rule is "under 135 cm", so no seat is needed.
 - **Consent:** parinte-10 and 14 have not given consent. Whether they take part in matching is **not decided**.
@@ -114,40 +118,18 @@ Things the data shows that the algorithm will meet:
 
 | Missing | Notes |
 | --- | --- |
+| A parent's **weekly availability** (time spans per day) | The planning form `mobile/src/features/plan-rides/` collects it as `WeekPlan` but its `onPublish` saves nothing. This is the first feature to build. |
 | **Rides / schedule produced by the algorithm** | The Calendar (`mobile/src/features/calendar/`) still uses mock data (`CalendarRide` in `types.ts`). |
 | **Coordinates** of homes and school | Only text addresses exist. Pickup order and detours need `lat`/`lng`. |
 | **Groups** of families | Not stored anywhere yet. |
-| Notifications, alerts, handover events | Not built. |
+| Notifications, alerts, handover events | Not built. The missing-child alert fires 2 minutes after the deadline (pitch deck). |
 
-## 5b. Weekly availability: `parinti/{uid}/disponibilitati/{saptamana}`
-
-Written by the app when a parent taps **Publică cursele** (`mobile/src/features/plan-rides/planStorage.ts`).
-One document per parent per week; the document id is the Monday of that week. Publishing again replaces it.
-Types: `Disponibilitate` / `CursaDisponibila` in `backend/src/types.ts` (copy in `mobile/src/types/disponibilitate.ts`).
+Existing type for what a parent plans (not stored yet), in `mobile/src/features/plan-rides/types.ts`:
 
 ```ts
-Disponibilitate {
-  parinteId: string            // "parinte-01", same as the parent's uid
-  saptamana: string            // "2026-11-09", the Monday; also the document id
-  adresaAcasa: string          // pickup address for this week (pre-filled from the profile, editable)
-  curse: CursaDisponibila[]    // at least 3, up to all 10 slots
-  actualizatLa: Timestamp      // server time of the last publish
-}
-
-CursaDisponibila {
-  data: string                 // "2026-11-11"
-  zi: 'luni' | 'marți' | 'miercuri' | 'joi' | 'vineri'
-  directie: 'spreScoala' | 'spreCasa'   // morning home → school / afternoon school → home
-  oraPlecare: string           // "07:30": leaves home (spreScoala) or school (spreCasa)
-  oraSosire: string            // "07:55": arrives at school (spreScoala) or home (spreCasa)
-  locuriDisponibile: number    // seats for children, 1 … vehicul.numarLocuri - 1
-}
+PlannedRide { date: "YYYY-MM-DD", direction: 'toSchool' | 'toHome', departureTime, arrivalTime, seats }
+WeekPlan    { homeAddress: string, rides: PlannedRide[] }   // rides.length must be 3 to 5
 ```
-
-Rules (`backend/firestore.rules`): a parent can read and write only their own documents, only for next week,
-only before Sunday 18:00 (Romania time), with at least 3 valid rides and no more seats than their car has.
-To read every parent's plan for a week, the algorithm uses the Admin SDK:
-`collectionGroup('disponibilitati').where('saptamana', '==', '2026-11-09')`.
 
 ## 6. Proposal: the shared `data/` folder
 
@@ -172,3 +154,18 @@ Rules for it:
 2. Do parents without consent (parinte-10, 14) take part in matching?
 3. Is `zileDisponibile` (standing days) combined with the weekly availability, or is the weekly plan the only source?
 4. Where the algorithm runs on Sunday (script, endpoint or Cloud Function), since the app can't read other parents' data.
+5. Which of the calendar rules in section 8 are kept.
+
+## 8. Calendar rules from the early idea notes (unconfirmed)
+
+These come from the old "IDEEA DE BUSINESS" notes. Where they conflict with section 1, section 1 wins.
+
+| Early note | Status |
+| --- | --- |
+| A parent can be "responsible" (on duty) or "not responsible" in a given slot | Compatible; this is the driver / non-driver split |
+| A parent has a car with valid RCA insurance | Compatible with the `vehicul` block; the insurance is not stored |
+| Responsible for at least 3 of 4 rides per week | **Superseded** by 3 to 5 rides per week out of 10 slots |
+| Planning is done Monday to Friday for the following week, in the calendar | **To reconcile** with planning closing Sunday 18:00 |
+| Calendar colours: grey = slot not yet taken, green = taken, but more parents can still be added as a backup, so at least one parent remains if someone withdraws | Open: not in the current calendar |
+| On Saturday and Sunday, slots that are still unfilled, or that have 2 or more parents, show red | Open |
+| In a conflict, the parent with the most recent 4 or more rides done in past weeks gets priority to be not responsible | Open: matches the fairness goal, algorithm owner to decide |
