@@ -32,7 +32,8 @@ export function LoginScreen({ onSubmit }: LoginScreenProps) {
   const [eroare, setEroare] = useState<string | null>(null);
   const [seTrimite, setSeTrimite] = useState(false);
 
-  const poateTrimite = telefon.trim().length > 0 && cod.length > 0 && !seTrimite;
+  const poateTrimite =
+    telefon.trim().length > 0 && cod.length > 0 && !seTrimite;
 
   const handleSubmit = async () => {
     if (!poateTrimite) return;
@@ -82,7 +83,9 @@ export function LoginScreen({ onSubmit }: LoginScreenProps) {
           style={shadows.strong}
         >
           <View className="gap-1">
-            <AppText className="text-[13px] text-steel">Număr de telefon</AppText>
+            <AppText className="text-[13px] text-steel">
+              Număr de telefon
+            </AppText>
             <TextInput
               accessibilityLabel="Număr de telefon"
               value={telefon}
@@ -141,7 +144,11 @@ export function LoginScreen({ onSubmit }: LoginScreenProps) {
             {seTrimite ? (
               <ActivityIndicator color={colors.mint} />
             ) : (
-              <LogIn size={22} color={colors.mint} strokeWidth={ICON_STROKE_WIDTH} />
+              <LogIn
+                size={22}
+                color={colors.mint}
+                strokeWidth={ICON_STROKE_WIDTH}
+              />
             )}
             <AppText numberOfLines={1} className="text-[18px] text-mint">
               Conectează-te
