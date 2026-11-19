@@ -9,6 +9,8 @@ export type LatLng = {
 
 export type MapPeriod = 'morning' | 'afternoon';
 
+export type MapSkin = 'mint' | 'clean' | 'warm' | 'standard';
+
 /** Monday is 0, Friday is 4. */
 export type SchoolDay = 0 | 1 | 2 | 3 | 4;
 

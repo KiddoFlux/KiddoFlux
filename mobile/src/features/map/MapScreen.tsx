@@ -23,12 +23,15 @@ import { MapHeader } from './components/MapHeader';
 import { PICKUP_MARKER_ANCHOR, PickupMarker } from './components/PickupMarker';
 import { RideSheet } from './components/RideSheet';
 import { SCHOOL_MARKER_ANCHOR, SchoolMarker } from './components/SchoolMarker';
+import { SkinToggle } from './components/SkinToggle';
 import { useUserLocation } from './hooks/useUserLocation';
+import { loadSavedMapSkin, saveMapSkin } from './skinStorage';
 import type {
   CarpoolParent,
   CarpoolRide,
   LatLng,
   MapPeriod,
+  MapSkin,
   RouteStop,
   School,
   SchoolDay,
@@ -103,9 +106,24 @@ export function MapScreen({
   const [isHeaderExpanded, setIsHeaderExpanded] = useState(false);
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
+  const [skin, setSkin] = useState<MapSkin>('mint');
+  const [isSkinExpanded, setIsSkinExpanded] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
   const [sheetHeight, setSheetHeight] = useState(0);
   const [note, setNote] = useState<string | null>(null);
+
+  // Load persisted skin from previous app launches
+  useEffect(() => {
+    let isActive = true;
+    loadSavedMapSkin().then((savedSkin) => {
+      if (isActive && savedSkin !== 'mint') {
+        setSkin(savedSkin);
+      }
+    });
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (note === null) return undefined;
@@ -190,10 +208,23 @@ export function MapScreen({
   };
 
   const collapsePanels = () => {
-    if (!isHeaderExpanded && !isSheetExpanded) return;
+    if (!isHeaderExpanded && !isSheetExpanded && !isSkinExpanded) return;
     animateLayout();
     setIsHeaderExpanded(false);
     setIsSheetExpanded(false);
+    setIsSkinExpanded(false);
+  };
+
+  const handleChangeSkin = (nextSkin: MapSkin) => {
+    setSkin(nextSkin);
+    saveMapSkin(nextSkin);
+    const skinNames: Record<MapSkin, string> = {
+      mint: 'Temă: Mint (KiddoFlux)',
+      clean: 'Temă: Curat (Minimal)',
+      warm: 'Temă: Pastel Cald',
+      standard: 'Temă: Standard OSM',
+    };
+    setNote(skinNames[nextSkin]);
   };
 
   const handleChangePeriod = (next: MapPeriod) => {
@@ -255,6 +286,8 @@ export function MapScreen({
     accessibilityLabel: school.name,
     anchor: SCHOOL_MARKER_ANCHOR,
     zIndex: 2,
+    markerType: 'school',
+    label: school.shortName,
     element: <SchoolMarker label={school.shortName} />,
   };
 
@@ -268,6 +301,10 @@ export function MapScreen({
             accessibilityLabel: `Preluare la ${pickupStop.time}, ${pickupStop.label}, ${pickupStop.address}`,
             anchor: PICKUP_MARKER_ANCHOR,
             zIndex: 3,
+            markerType: 'pickup',
+            initial: driver.initial,
+            tone: driver.tone,
+            time: pickupStop.time,
             element: (
               <PickupMarker
                 initial={driver.initial}
@@ -290,6 +327,9 @@ export function MapScreen({
       id: `home-${parent.id}`,
       coordinate: parent.home,
       accessibilityLabel: `Acasă la ${parent.firstName}`,
+      markerType: 'home' as const,
+      initial: parent.initial,
+      tone: parent.tone,
       element: <HomeMarker initial={parent.initial} tone={parent.tone} />,
     }));
 
@@ -301,6 +341,8 @@ export function MapScreen({
         markers={[schoolMarker, ...homeMarkers, ...pickupMarkers]}
         lines={lines}
         showsUserLocation={userLocation.isGranted}
+        userCoordinate={userCoordinate}
+        skin={skin}
         onReady={() => setIsMapReady(true)}
         onPressMap={collapsePanels}
       />
@@ -322,6 +364,25 @@ export function MapScreen({
         onLocate={handleLocate}
         onLayout={isHeaderExpanded ? undefined : measure(setHeaderHeight)}
       />
+
+      {/* Floating map skin/theme toggle */}
+      {!isHeaderExpanded ? (
+        <View
+          pointerEvents="box-none"
+          className="absolute right-4"
+          style={{ top: (headerHeight || 80) + 12 }}
+        >
+          <SkinToggle
+            value={skin}
+            onChange={handleChangeSkin}
+            isExpanded={isSkinExpanded}
+            onToggleExpanded={() => {
+              animateLayout();
+              setIsSkinExpanded((prev) => !prev);
+            }}
+          />
+        </View>
+      ) : null}
 
       <View
         pointerEvents="box-none"

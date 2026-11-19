@@ -39,7 +39,9 @@ function createAuth() {
 function createFirestore() {
   try {
     // React Native has no WebChannel streaming; fall back to long polling when needed.
-    return initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
+    return initializeFirestore(app, {
+      experimentalAutoDetectLongPolling: true,
+    });
   } catch {
     return getFirestore(app);
   }

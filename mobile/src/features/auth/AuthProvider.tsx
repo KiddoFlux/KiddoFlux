@@ -97,7 +97,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const autentifica = useCallback(async (telefon: string, cod: string) => {
     const email = telefonLaEmail(telefon);
     if (!email) {
-      throw new EroareAutentificare('Introdu un număr de telefon valid, de forma 07xx xxx xxx.');
+      throw new EroareAutentificare(
+        'Introdu un număr de telefon valid, de forma 07xx xxx xxx.',
+      );
     }
     if (!cod.trim()) {
       throw new EroareAutentificare('Introdu codul de acces.');
@@ -105,7 +107,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     seAutentifica.current = true;
     try {
-      const { user } = await signInWithEmailAndPassword(auth, email, cod.trim());
+      const { user } = await signInWithEmailAndPassword(
+        auth,
+        email,
+        cod.trim(),
+      );
       try {
         setProfil(await incarcaProfil(user.uid));
         setStare('conectat');
@@ -135,7 +141,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth trebuie folosit in interiorul AuthProvider.');
+  if (!context)
+    throw new Error('useAuth trebuie folosit in interiorul AuthProvider.');
   return context;
 }
 

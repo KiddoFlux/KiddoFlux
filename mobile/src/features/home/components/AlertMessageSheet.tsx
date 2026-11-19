@@ -1,12 +1,6 @@
 import { X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import {
-  Keyboard,
-  Platform,
-  Pressable,
-  TextInput,
-  View,
-} from 'react-native';
+import { Keyboard, Platform, Pressable, TextInput, View } from 'react-native';
 
 import { AppText } from '@/components/ui/AppText';
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -77,11 +71,7 @@ export function AlertMessageSheet({ onClose }: AlertMessageSheetProps) {
               onPress={onClose}
               className="h-11 w-11 items-center justify-center rounded-full bg-steel/10"
             >
-              <X
-                size={22}
-                color={colors.ink}
-                strokeWidth={ICON_STROKE_WIDTH}
-              />
+              <X size={22} color={colors.ink} strokeWidth={ICON_STROKE_WIDTH} />
             </Pressable>
           </View>
 
