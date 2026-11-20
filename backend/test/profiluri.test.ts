@@ -2,8 +2,16 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { normalizeazaTelefon, telefonLaEmail } from '../src/auth';
-import { INALTIME_SCAUN_AUTO_CM, SCOALA } from '../src/constants';
+import {
+  INALTIME_INALTATOR_MIN_CM,
+  INALTIME_SCAUN_AUTO_CM,
+  SCOALA,
+} from '../src/constants';
 import { PROFILURI } from '../src/data/profiluri';
+import {
+  determinaTipScaun,
+  verificaNecesitateDeclarareInaltime,
+} from '../src/scaunAuto';
 
 const unice = (valori: string[]) => new Set(valori).size === valori.length;
 
@@ -97,5 +105,68 @@ describe('telefon -> email de autentificare', () => {
     for (const intrare of ['', 'abc', '12345', '0212345678', '07001000011']) {
       assert.equal(telefonLaEmail(intrare), null, intrare);
     }
+  });
+});
+
+describe('reguli scaune auto si declarare inaltime', () => {
+  it('determina corect cele 3 categorii de scaune auto', () => {
+    // Categoria 1: Scaun cu ham propriu (< 105 cm)
+    const sub105 = determinaTipScaun(104);
+    assert.equal(sub105.tip, 'scaun_integrat');
+    assert.equal(sub105.necesitaScaunAuto, true);
+
+    // Categoria 2: Inaltator auto (105 - 134 cm)
+    const fix105 = determinaTipScaun(105);
+    assert.equal(fix105.tip, 'inaltator');
+    assert.equal(fix105.necesitaScaunAuto, true);
+
+    const sub135 = determinaTipScaun(134);
+    assert.equal(sub135.tip, 'inaltator');
+    assert.equal(sub135.necesitaScaunAuto, true);
+
+    // Categoria 3: Centura normala pentru adulti (>= 135 cm)
+    const fix135 = determinaTipScaun(135);
+    assert.equal(fix135.tip, 'centura_normala');
+    assert.equal(fix135.necesitaScaunAuto, false);
+
+    const peste135 = determinaTipScaun(145);
+    assert.equal(peste135.tip, 'centura_normala');
+    assert.equal(peste135.necesitaScaunAuto, false);
+  });
+
+  it('toate profilurile demo au tipScaun coerent cu inaltimea copilului', () => {
+    for (const { id, copil: c } of PROFILURI) {
+      const calculat = determinaTipScaun(c.inaltimeCm);
+      assert.equal(c.tipScaun, calculat.tip, `${id}: tipScaun`);
+    }
+  });
+
+  it('detecteaza prima autentificare cand ultimaDeclarareInaltime lipseste', () => {
+    const [ana] = PROFILURI;
+    const stare = verificaNecesitateDeclarareInaltime(ana);
+    assert.equal(stare.necesita, true);
+    assert.equal(stare.motiv, 'prima_autentificare');
+  });
+
+  it('nu cere declarare daca inaltimea a fost declarata recent (< 30 zile)', () => {
+    const acum = new Date('2026-11-20T12:00:00Z');
+    const declarataRecent = new Date('2026-11-10T12:00:00Z').toISOString();
+    const profilTest = { ...PROFILURI[0], ultimaDeclarareInaltime: declarataRecent };
+
+    const stare = verificaNecesitateDeclarareInaltime(profilTest, acum);
+    assert.equal(stare.necesita, false);
+    assert.equal(stare.motiv, null);
+    assert.equal(stare.zileTrecute, 10);
+  });
+
+  it('cere declarare lunara blocanta cand au trecut >= 30 de zile', () => {
+    const acum = new Date('2026-11-20T12:00:00Z');
+    const declarata35Zile = new Date('2026-10-15T12:00:00Z').toISOString();
+    const profilTest = { ...PROFILURI[0], ultimaDeclarareInaltime: declarata35Zile };
+
+    const stare = verificaNecesitateDeclarareInaltime(profilTest, acum);
+    assert.equal(stare.necesita, true);
+    assert.equal(stare.motiv, 'lunar');
+    assert.ok(stare.zileTrecute! >= 30);
   });
 });

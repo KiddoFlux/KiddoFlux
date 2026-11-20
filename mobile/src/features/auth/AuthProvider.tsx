@@ -3,7 +3,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import {
   createContext,
   type ReactNode,
@@ -16,7 +16,8 @@ import {
 } from 'react';
 
 import { auth, db } from '@/lib/firebase';
-import type { ProfilParinte } from '@/types/profil';
+import type { Copil, ProfilParinte } from '@/types/profil';
+import { determinaTipScaun, extrageCopiiProfil } from '@/utils/scaunAuto';
 
 import { telefonLaEmail } from './phone';
 
@@ -33,6 +34,8 @@ type AuthContextValue = {
   profil: ProfilParinte | null;
   autentifica: (telefon: string, cod: string) => Promise<void>;
   deconecteaza: () => Promise<void>;
+  salveazaInaltimeCopii: (copiiNoi: Copil[]) => Promise<void>;
+  confirmaInaltimeNeschimbata: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -131,9 +134,137 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth);
   }, []);
 
+  const salveazaInaltimeCopii = useCallback(
+    async (copiiNoi: Copil[]) => {
+      const uid = auth.currentUser?.uid ?? profil?.id;
+      if (!uid || !profil) {
+        throw new EroareAutentificare('Nu ești conectat.');
+      }
+
+      const nowIso = new Date().toISOString();
+      const copiiProcesati = copiiNoi.map((copil) => {
+        const info = determinaTipScaun(copil.inaltimeCm);
+        return {
+          ...copil,
+          necesitaScaunAuto: info.necesitaScaunAuto,
+          tipScaun: info.tip,
+          inaltimeActualizataLa: nowIso,
+        };
+      });
+
+      const copilPrincipal = copiiProcesati[0] ?? profil.copil;
+      const dateActualizate: Partial<ProfilParinte> = {
+        copil: copilPrincipal,
+        copii: copiiProcesati,
+        ultimaDeclarareInaltime: nowIso,
+      };
+
+      try {
+        const docRef = doc(db, COLECTIE_PARINTI, uid);
+        await updateDoc(docRef, dateActualizate as Record<string, unknown>);
+      } catch (eroare) {
+        console.error('Eroare updateDoc inaltime:', eroare);
+        const cod = (eroare as { code?: string })?.code;
+        if (cod === 'permission-denied') {
+          throw new EroareAutentificare(
+            'Permisiune refuzată de baza de date (verifică regulile Firestore).',
+          );
+        }
+        if (cod === 'unavailable' || cod === 'network-request-failed') {
+          throw new EroareAutentificare(
+            'Nu ai conexiune la internet. Încearcă din nou.',
+          );
+        }
+        throw new EroareAutentificare(
+          `Nu am putut salva: ${(eroare as Error)?.message ?? 'Eroare necunoscută'}`,
+        );
+      }
+
+      setProfil((prev) =>
+        prev
+          ? {
+              ...prev,
+              ...dateActualizate,
+            }
+          : null,
+      );
+    },
+    [profil],
+  );
+
+  const confirmaInaltimeNeschimbata = useCallback(async () => {
+    const uid = auth.currentUser?.uid ?? profil?.id;
+    if (!uid || !profil) {
+      throw new EroareAutentificare('Nu ești conectat.');
+    }
+
+    const nowIso = new Date().toISOString();
+    const copii = extrageCopiiProfil(profil);
+    const copiiProcesati = copii.map((copil) => {
+      const info = determinaTipScaun(copil.inaltimeCm);
+      return {
+        ...copil,
+        necesitaScaunAuto: info.necesitaScaunAuto,
+        tipScaun: info.tip,
+        inaltimeActualizataLa: nowIso,
+      };
+    });
+
+    const copilPrincipal = copiiProcesati[0] ?? profil.copil;
+    const dateActualizate: Partial<ProfilParinte> = {
+      copil: copilPrincipal,
+      copii: copiiProcesati,
+      ultimaDeclarareInaltime: nowIso,
+    };
+
+    try {
+      const docRef = doc(db, COLECTIE_PARINTI, uid);
+      await updateDoc(docRef, dateActualizate as Record<string, unknown>);
+    } catch (eroare) {
+      console.error('Eroare updateDoc confirma inaltime:', eroare);
+      const cod = (eroare as { code?: string })?.code;
+      if (cod === 'permission-denied') {
+        throw new EroareAutentificare(
+          'Permisiune refuzată de baza de date (verifică regulile Firestore).',
+        );
+      }
+      if (cod === 'unavailable' || cod === 'network-request-failed') {
+        throw new EroareAutentificare(
+          'Nu ai conexiune la internet. Încearcă din nou.',
+        );
+      }
+      throw new EroareAutentificare(
+        `Nu am putut confirma: ${(eroare as Error)?.message ?? 'Eroare necunoscută'}`,
+      );
+    }
+
+    setProfil((prev) =>
+      prev
+        ? {
+            ...prev,
+            ...dateActualizate,
+          }
+        : null,
+    );
+  }, [profil]);
+
   const value = useMemo(
-    () => ({ stare, profil, autentifica, deconecteaza }),
-    [stare, profil, autentifica, deconecteaza],
+    () => ({
+      stare,
+      profil,
+      autentifica,
+      deconecteaza,
+      salveazaInaltimeCopii,
+      confirmaInaltimeNeschimbata,
+    }),
+    [
+      stare,
+      profil,
+      autentifica,
+      deconecteaza,
+      salveazaInaltimeCopii,
+      confirmaInaltimeNeschimbata,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

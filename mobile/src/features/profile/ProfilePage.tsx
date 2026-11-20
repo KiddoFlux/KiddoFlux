@@ -1,24 +1,57 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 
+import { SuccessModal } from '@/components/ui/SuccessModal';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { extrageCopiiProfil } from '@/utils/scaunAuto';
 
+import { HeightDeclarationModal } from './components/HeightDeclarationModal';
 import { toProfileData } from './fromProfil';
 import { ProfileScreen } from './ProfileScreen';
 
 /** Supplies the Profile data and actions. ProfileScreen only draws them. */
 export function ProfilePage() {
-  const { profil } = useAuth();
+  const { profil, salveazaInaltimeCopii } = useAuth();
+  const [modalInaltimeDeschis, setModalInaltimeDeschis] = useState(false);
+  const [mesajSucces, setMesajSucces] = useState<string | null>(null);
 
   // Briefly null while signing out, until the app switches to the login screen.
   if (!profil) return null;
 
+  const copii = extrageCopiiProfil(profil);
+
   return (
-    <ProfileScreen
-      profile={toProfileData(profil)}
-      // Opened from a deep link there may be nothing to go back to.
-      onBack={() =>
-        router.canGoBack() ? router.back() : router.replace('/setari')
-      }
-    />
+    <>
+      <ProfileScreen
+        profile={toProfileData(profil)}
+        onEditHeight={() => setModalInaltimeDeschis(true)}
+        // Opened from a deep link there may be nothing to go back to.
+        onBack={() =>
+          router.canGoBack() ? router.back() : router.replace('/setari')
+        }
+      />
+
+      <HeightDeclarationModal
+        visible={modalInaltimeDeschis}
+        isBlocking={false}
+        motiv="manual"
+        copii={copii}
+        onSave={async (actualizati) => {
+          await salveazaInaltimeCopii(actualizati);
+          setModalInaltimeDeschis(false);
+          setMesajSucces('Înălțimea și tipul de scaun au fost actualizate.');
+        }}
+        onClose={() => setModalInaltimeDeschis(false)}
+      />
+
+      {mesajSucces && (
+        <SuccessModal
+          visible
+          title="Modificările au fost salvate cu succes!"
+          message={mesajSucces}
+          onClose={() => setMesajSucces(null)}
+        />
+      )}
+    </>
   );
 }

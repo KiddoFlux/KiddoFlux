@@ -18,6 +18,12 @@ export const DOMENIU_EMAIL_AUTENTIFICARE = 'demo.kiddoflux.ro';
 /** Copiii sub aceasta inaltime au nevoie de scaun auto omologat (cerinte, sectiunea 6.2). */
 export const INALTIME_SCAUN_AUTO_CM = 135;
 
+/** Copiii intre 105 cm si 134 cm pot folosi inaltator auto omologat (standard R129 / i-Size). */
+export const INALTIME_INALTATOR_MIN_CM = 105;
+
+/** Intervalul in zile la care parintii trebuie sa declare din nou inaltimea copilului (lunar). */
+export const INTERVAL_DECLARARE_LUNARA_ZILE = 30;
+
 /** Subcolectia `parinti/{uid}/disponibilitati/{saptamana}` cu planul saptamanal al parintelui. */
 export const SUBCOLECTIE_DISPONIBILITATI = 'disponibilitati';
 
