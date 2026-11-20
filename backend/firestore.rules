@@ -61,7 +61,7 @@ service cloud.firestore {
       let d = request.resource.data;
       let diff = d.diff(resource.data);
       return diff.affectedKeys().hasOnly(['copil', 'copii', 'ultimaDeclarareInaltime'])
-        && d.copil.inaltimeCm is int
+        && (d.copil.inaltimeCm is int || d.copil.inaltimeCm is number)
         && d.copil.inaltimeCm >= 50
         && d.copil.inaltimeCm <= 220
         && d.copil.necesitaScaunAuto == (d.copil.inaltimeCm < 135)

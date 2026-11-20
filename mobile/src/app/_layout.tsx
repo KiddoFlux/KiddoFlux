@@ -15,7 +15,9 @@ import { View } from 'react-native';
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
 import LoadingScreen from '@/features/loading/LoadingScreen';
 import { HeightDeclarationModal } from '@/features/profile/components/HeightDeclarationModal';
+import { SuccessModal } from '@/components/ui/SuccessModal';
 import { colors } from '@/theme/colors';
+import type { Copil } from '@/types/profil';
 import {
   extrageCopiiProfil,
   verificaNecesitateDeclarareInaltime,
@@ -27,6 +29,7 @@ SplashScreen.preventAutoHideAsync();
 function AppNavigator() {
   const { stare, profil, salveazaInaltimeCopii, confirmaInaltimeNeschimbata } =
     useAuth();
+  const [mesajSucces, setMesajSucces] = useState<string | null>(null);
 
   // Checking the saved session takes a moment; show the background, not a flash of login.
   if (stare === 'se-incarca') {
@@ -36,6 +39,16 @@ function AppNavigator() {
   const isSignedIn = stare === 'conectat';
   const statusDeclarare = verificaNecesitateDeclarareInaltime(profil);
   const copii = extrageCopiiProfil(profil);
+
+  const handleSaveInaltime = async (copiiActualizati: Copil[]) => {
+    await salveazaInaltimeCopii(copiiActualizati);
+    setMesajSucces('Înălțimea și categoria de scaun auto au fost actualizate.');
+  };
+
+  const handleConfirmUnchanged = async () => {
+    await confirmaInaltimeNeschimbata();
+    setMesajSucces('Confirmarea lunară a fost înregistrată cu succes.');
+  };
 
   return (
     <>
@@ -78,10 +91,19 @@ function AppNavigator() {
             isBlocking
             motiv={statusDeclarare.motiv}
             copii={copii}
-            onSave={salveazaInaltimeCopii}
-            onConfirmUnchanged={confirmaInaltimeNeschimbata}
+            onSave={handleSaveInaltime}
+            onConfirmUnchanged={handleConfirmUnchanged}
           />
         )}
+
+      {mesajSucces && (
+        <SuccessModal
+          visible
+          title="Modificările au fost salvate cu succes!"
+          message={mesajSucces}
+          onClose={() => setMesajSucces(null)}
+        />
+      )}
     </>
   );
 }

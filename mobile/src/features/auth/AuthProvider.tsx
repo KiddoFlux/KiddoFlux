@@ -162,9 +162,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const docRef = doc(db, COLECTIE_PARINTI, uid);
         await updateDoc(docRef, dateActualizate as Record<string, unknown>);
-      } catch {
+      } catch (eroare) {
+        console.error('Eroare updateDoc inaltime:', eroare);
+        const cod = (eroare as { code?: string })?.code;
+        if (cod === 'permission-denied') {
+          throw new EroareAutentificare(
+            'Permisiune refuzată de baza de date (verifică regulile Firestore).',
+          );
+        }
+        if (cod === 'unavailable' || cod === 'network-request-failed') {
+          throw new EroareAutentificare(
+            'Nu ai conexiune la internet. Încearcă din nou.',
+          );
+        }
         throw new EroareAutentificare(
-          'Nu am putut salva înălțimea în baza de date. Verifică conexiunea.',
+          `Nu am putut salva: ${(eroare as Error)?.message ?? 'Eroare necunoscută'}`,
         );
       }
 
@@ -208,9 +220,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const docRef = doc(db, COLECTIE_PARINTI, uid);
       await updateDoc(docRef, dateActualizate as Record<string, unknown>);
-    } catch {
+    } catch (eroare) {
+      console.error('Eroare updateDoc confirma inaltime:', eroare);
+      const cod = (eroare as { code?: string })?.code;
+      if (cod === 'permission-denied') {
+        throw new EroareAutentificare(
+          'Permisiune refuzată de baza de date (verifică regulile Firestore).',
+        );
+      }
+      if (cod === 'unavailable' || cod === 'network-request-failed') {
+        throw new EroareAutentificare(
+          'Nu ai conexiune la internet. Încearcă din nou.',
+        );
+      }
       throw new EroareAutentificare(
-        'Nu am putut confirma înălțimea în baza de date. Verifică conexiunea.',
+        `Nu am putut confirma: ${(eroare as Error)?.message ?? 'Eroare necunoscută'}`,
       );
     }
 

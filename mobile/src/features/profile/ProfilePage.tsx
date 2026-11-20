@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 
+import { SuccessModal } from '@/components/ui/SuccessModal';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { extrageCopiiProfil } from '@/utils/scaunAuto';
 
@@ -12,6 +13,7 @@ import { ProfileScreen } from './ProfileScreen';
 export function ProfilePage() {
   const { profil, salveazaInaltimeCopii } = useAuth();
   const [modalInaltimeDeschis, setModalInaltimeDeschis] = useState(false);
+  const [mesajSucces, setMesajSucces] = useState<string | null>(null);
 
   // Briefly null while signing out, until the app switches to the login screen.
   if (!profil) return null;
@@ -37,9 +39,19 @@ export function ProfilePage() {
         onSave={async (actualizati) => {
           await salveazaInaltimeCopii(actualizati);
           setModalInaltimeDeschis(false);
+          setMesajSucces('Înălțimea și tipul de scaun au fost actualizate.');
         }}
         onClose={() => setModalInaltimeDeschis(false)}
       />
+
+      {mesajSucces && (
+        <SuccessModal
+          visible
+          title="Modificările au fost salvate cu succes!"
+          message={mesajSucces}
+          onClose={() => setMesajSucces(null)}
+        />
+      )}
     </>
   );
 }
