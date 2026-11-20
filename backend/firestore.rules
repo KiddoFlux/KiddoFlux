@@ -55,11 +55,25 @@ service cloud.firestore {
         && request.time > termenLimita(saptamana) - duration.value(7, 'd');
     }
 
+    // Verificam ca actualizarea profilului de catre parinte modifica DOAR campurile legate de
+    // inaltimea copiilor si data declararii, iar valorile respecta regulile rutiere.
+    function esteActualizareInaltimeValida() {
+      let d = request.resource.data;
+      let diff = d.diff(resource.data);
+      return diff.affectedKeys().hasOnly(['copil', 'copii', 'ultimaDeclarareInaltime'])
+        && d.copil.inaltimeCm is int
+        && d.copil.inaltimeCm >= 50
+        && d.copil.inaltimeCm <= 220
+        && d.copil.necesitaScaunAuto == (d.copil.inaltimeCm < 135)
+        && (!('tipScaun' in d.copil) || d.copil.tipScaun in ['scaun_integrat', 'inaltator', 'centura_normala']);
+    }
+
     // Un parinte logat isi poate citi DOAR propriul profil.
-    // Fara listare, fara scrieri din aplicatie (profilurile se incarca din scriptul de seed).
+    // Poate actualiza doar inaltimea copiilor (prima logare si lunar).
     match /parinti/{uid} {
       allow get: if request.auth != null && request.auth.uid == uid;
-      allow list, write: if false;
+      allow update: if request.auth != null && request.auth.uid == uid && esteActualizareInaltimeValida();
+      allow list, create, delete: if false;
 
       // Disponibilitatea saptamanala: parintele o citeste si o (re)publica doar pe a lui,
       // doar pentru saptamana urmatoare si doar inainte de termenul de duminica.

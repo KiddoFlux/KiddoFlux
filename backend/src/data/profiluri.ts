@@ -1,4 +1,5 @@
 import { INALTIME_SCAUN_AUTO_CM, SCOALA } from '../constants';
+import { determinaTipScaun } from '../scaunAuto';
 import type { Copil, ProfilParinte, Vehicul, ZiSaptamana } from '../types';
 
 /**
@@ -37,9 +38,14 @@ function profil(i: Intrare): ProfilParinte {
     adresaAcasa: i.adresaAcasa,
     scoala: { ...SCOALA },
     vehicul: i.vehicul,
-    copil: { ...i.copil, necesitaScaunAuto: i.copil.inaltimeCm < INALTIME_SCAUN_AUTO_CM },
+    copil: {
+      ...i.copil,
+      necesitaScaunAuto: i.copil.inaltimeCm < INALTIME_SCAUN_AUTO_CM,
+      tipScaun: determinaTipScaun(i.copil.inaltimeCm).tip,
+    },
     zileDisponibile: i.zileDisponibile ?? TOATE_ZILELE,
     consimtamant: { acordat: i.consimtamant !== null, data: i.consimtamant },
+    ultimaDeclarareInaltime: null,
   };
 }
 

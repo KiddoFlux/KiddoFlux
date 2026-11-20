@@ -10,6 +10,11 @@ export type ProfileData = {
   grade: string;
   /** Nr. matricol, kept as text because it can contain letters or separators. */
   matriculationNumber: string;
+  /** Tip scaun auto necesar conform inaltimii. */
+  seatTypeLabel: string;
+  seatTypeBadge: string;
+  needsChildSeat: boolean;
+  lastHeightDeclaration: string | null;
 
   // The school.
   schoolName: string;

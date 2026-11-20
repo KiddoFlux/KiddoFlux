@@ -1,7 +1,13 @@
+import { Ruler } from 'lucide-react-native';
 import { ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AppText } from '@/components/ui/AppText';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { ScreenTopBar } from '@/components/ui/ScreenTopBar';
+import { colors } from '@/theme/colors';
+import { ICON_STROKE_WIDTH } from '@/theme/icons';
+import { shadows } from '@/theme/shadows';
 
 import {
   AcademicSection,
@@ -19,9 +25,14 @@ const SCREEN_BOTTOM_PADDING = 32;
 export type ProfileScreenProps = {
   profile: ProfileData;
   onBack: () => void;
+  onEditHeight?: () => void;
 };
 
-export function ProfileScreen({ profile, onBack }: ProfileScreenProps) {
+export function ProfileScreen({
+  profile,
+  onBack,
+  onEditHeight,
+}: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
 
   // Add a field to one of these lists and it shows up in its card.
@@ -35,6 +46,11 @@ export function ProfileScreen({ profile, onBack }: ProfileScreenProps) {
   const studentFields: readonly AcademicField[] = [
     { label: 'Prenume', value: profile.firstName },
     { label: 'Înălțime', value: `${profile.heightCm} cm` },
+    { label: 'Tip scaun auto', value: profile.seatTypeBadge },
+    {
+      label: 'Ultima verificare',
+      value: profile.lastHeightDeclaration ?? 'La prima autentificare',
+    },
   ];
 
   const vehicleFields: readonly AcademicField[] = [
@@ -64,6 +80,22 @@ export function ProfileScreen({ profile, onBack }: ProfileScreenProps) {
       <ProfileCard profile={profile} />
       <AcademicSection fields={academicFields} />
       <AcademicSection title="Informații elev" fields={studentFields} />
+      {onEditHeight && (
+        <PressableScale
+          onPress={onEditHeight}
+          className="-mt-2 h-12 flex-row items-center justify-center gap-2 rounded-[20px] border border-mint bg-white"
+          style={shadows.soft}
+        >
+          <Ruler
+            size={16}
+            color={colors.navy}
+            strokeWidth={ICON_STROKE_WIDTH}
+          />
+          <AppText className="font-bold text-[14px] text-navy">
+            Actualizează înălțimea elevului
+          </AppText>
+        </PressableScale>
+      )}
       <AcademicSection title="Vehicul" fields={vehicleFields} />
     </ScrollView>
   );
