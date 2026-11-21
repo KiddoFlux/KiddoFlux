@@ -3,41 +3,41 @@ import type { Child } from '@/types/ride';
 import { addWeeks, getWeekDays, toISODate } from './dateUtils';
 import type { CalendarRide } from './types';
 
+const LUCA: Child = {
+  id: 'copil-parinte-01',
+  name: 'Luca',
+  initial: 'L',
+  tone: 'peach',
+};
 const MARIA: Child = {
-  id: 'child-1',
+  id: 'copil-parinte-02',
   name: 'Maria',
   initial: 'M',
   tone: 'peach',
 };
 const ANDREI: Child = {
-  id: 'child-2',
+  id: 'copil-parinte-03',
   name: 'Andrei',
   initial: 'A',
-  tone: 'sage',
-};
-const LUCA: Child = {
-  id: 'child-3',
-  name: 'Luca',
-  initial: 'L',
   tone: 'steel',
 };
 const SOFIA: Child = {
-  id: 'child-4',
+  id: 'copil-parinte-04',
   name: 'Sofia',
   initial: 'S',
-  tone: 'peach',
+  tone: 'sage',
 };
 const DAVID: Child = {
-  id: 'child-5',
+  id: 'copil-parinte-05',
   name: 'David',
   initial: 'D',
   tone: 'sage',
 };
 
-const ALL_CHILDREN = [MARIA, ANDREI, LUCA, SOFIA, DAVID];
+const ALL_CHILDREN = [LUCA, MARIA, ANDREI, SOFIA, DAVID];
 
 /** The current user's children. */
-export const mockMyChildrenIds: readonly string[] = [MARIA.id];
+export const mockMyChildrenIds: readonly string[] = [LUCA.id];
 
 const IOANA = 'Ioana P.';
 const MIHAI = 'Mihai D.';

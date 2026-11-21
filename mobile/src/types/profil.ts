@@ -56,6 +56,7 @@ export type ProfilParinte = {
   numeComplet: string;
   telefon: string;
   email: string;
+  avatarUrl?: string | null;
   adresaAcasa: string;
   scoala: Scoala;
   vehicul: Vehicul;

@@ -68,10 +68,15 @@ export function CalendarPage() {
           },
   );
 
+  const myChildrenIds = useMemo(() => {
+    if (!profil) return mockMyChildrenIds;
+    return [`copil-${profil.id}`];
+  }, [profil]);
+
   return (
     <CalendarScreen
       rides={rides}
-      myChildrenIds={mockMyChildrenIds}
+      myChildrenIds={myChildrenIds}
       firstWeekDate={today}
       initialDate={getScheduleDate(today)}
       nextWeekNote={

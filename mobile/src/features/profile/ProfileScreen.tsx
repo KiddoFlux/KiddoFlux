@@ -65,6 +65,15 @@ export function ProfileScreen({
     },
   ];
 
+  const carpoolFields: readonly AcademicField[] = [
+    {
+      label: 'Zile disponibile pentru condus',
+      value: profile.availableDaysLabel,
+      numberOfLines: 2,
+    },
+    { label: 'Consimțământ carpool', value: profile.consentLabel },
+  ];
+
   return (
     <ScrollView
       className="flex-1 bg-mint"
@@ -80,6 +89,19 @@ export function ProfileScreen({
       <ProfileCard profile={profile} />
       <AcademicSection fields={academicFields} />
       <AcademicSection title="Informații elev" fields={studentFields} />
+      {profile.additionalChildren?.map((child, idx) => (
+        <AcademicSection
+          key={child.matriculationNumber || idx}
+          title={`Informații elev (${child.firstName})`}
+          fields={[
+            { label: 'Prenume', value: child.firstName },
+            { label: 'Înălțime', value: `${child.heightCm} cm` },
+            { label: 'Clasa', value: child.grade },
+            { label: 'Nr. matricol', value: child.matriculationNumber },
+            { label: 'Tip scaun auto', value: child.seatTypeBadge },
+          ]}
+        />
+      ))}
       {onEditHeight && (
         <PressableScale
           onPress={onEditHeight}
@@ -96,6 +118,7 @@ export function ProfileScreen({
           </AppText>
         </PressableScale>
       )}
+      <AcademicSection title="Disponibilitate & Acord" fields={carpoolFields} />
       <AcademicSection title="Vehicul" fields={vehicleFields} />
     </ScrollView>
   );

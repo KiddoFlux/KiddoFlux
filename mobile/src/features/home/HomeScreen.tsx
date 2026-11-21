@@ -6,6 +6,8 @@ import {
   TAB_BAR_HEIGHT,
 } from '@/components/navigation/TabBar';
 
+import type { ZiSaptamana } from '@/types/profil';
+
 import { HomeHeader } from './components/HomeHeader';
 import { NextRideCard } from './components/NextRideCard';
 import { PlanRidesCard } from './components/PlanRidesCard';
@@ -20,6 +22,7 @@ export type HomeScreenProps = {
   user: CurrentUser;
   nextRide: NextRide;
   hasUnreadNotifications: boolean;
+  activeDays?: readonly ZiSaptamana[];
   onOpenProfile: () => void;
   onOpenNotifications: () => void;
   onOpenNextRide: () => void;
@@ -34,6 +37,7 @@ export function HomeScreen({
   user,
   nextRide,
   hasUnreadNotifications,
+  activeDays,
   onOpenProfile,
   onOpenNotifications,
   onOpenNextRide,
@@ -74,7 +78,7 @@ export function HomeScreen({
           onScanCode={onScanCode}
           onReportAlert={onReportAlert}
         />
-        <PlanRidesCard onPress={onPlanRides} />
+        <PlanRidesCard activeDays={activeDays} onPress={onPlanRides} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

@@ -6,35 +6,62 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { colors } from '@/theme/colors';
 import { ICON_STROKE_WIDTH } from '@/theme/icons';
 import { shadows } from '@/theme/shadows';
+import type { ZiSaptamana } from '@/types/profil';
 import { isWeekScheduleFinal, PLANNING_DEADLINE_HOUR } from '@/utils/schedule';
 
-const SCHOOL_DAY_LABELS = ['L', 'Ma', 'Mi', 'J', 'V'] as const;
+const SCHOOL_DAYS: readonly { label: string; key: ZiSaptamana }[] = [
+  { label: 'L', key: 'luni' },
+  { label: 'Ma', key: 'marți' },
+  { label: 'Mi', key: 'miercuri' },
+  { label: 'J', key: 'joi' },
+  { label: 'V', key: 'vineri' },
+] as const;
 
 type PlanRidesCardProps = {
+  activeDays?: readonly ZiSaptamana[];
   onPress: () => void;
 };
 
-/** One tile per school day, with a dot for its morning and afternoon rides. */
-function WeekPreview() {
+/** One tile per school day, reflecting the parent's actual available driving days. */
+function WeekPreview({ activeDays }: { activeDays?: readonly ZiSaptamana[] }) {
   return (
     <View className="flex-row gap-[6px]">
-      {SCHOOL_DAY_LABELS.map((label) => (
-        <View
-          key={label}
-          className="h-[58px] flex-1 items-center justify-center gap-[6px] rounded-2xl bg-white/50"
-        >
-          <AppText className="text-[13px]">{label}</AppText>
-          <View className="flex-row gap-1">
-            <View className="h-[7px] w-[7px] rounded-full bg-navy" />
-            <View className="h-[7px] w-[7px] rounded-full bg-navy/30" />
+      {SCHOOL_DAYS.map(({ label, key }) => {
+        const esteActiv = !activeDays || activeDays.includes(key);
+        return (
+          <View
+            key={label}
+            className={`h-[58px] flex-1 items-center justify-center gap-[6px] rounded-2xl ${
+              esteActiv ? 'bg-white/60' : 'bg-white/20'
+            }`}
+          >
+            <AppText
+              className={`text-[13px] ${
+                esteActiv ? 'font-bold text-navy' : 'text-navy/40'
+              }`}
+            >
+              {label}
+            </AppText>
+            <View className="flex-row gap-1">
+              <View
+                className={`h-[7px] w-[7px] rounded-full ${
+                  esteActiv ? 'bg-navy' : 'bg-navy/20'
+                }`}
+              />
+              <View
+                className={`h-[7px] w-[7px] rounded-full ${
+                  esteActiv ? 'bg-navy/50' : 'bg-navy/10'
+                }`}
+              />
+            </View>
           </View>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 }
 
-export function PlanRidesCard({ onPress }: PlanRidesCardProps) {
+export function PlanRidesCard({ activeDays, onPress }: PlanRidesCardProps) {
   const footer = isWeekScheduleFinal(new Date())
     ? 'Planificarea se redeschide luni'
     : `Până duminică, ora ${PLANNING_DEADLINE_HOUR}:00`;
