@@ -20,9 +20,7 @@ function formateazaDataDeclarare(dataIso?: string | null): string | null {
 
 function formateazaZileDisponibile(zile: readonly string[]): string {
   if (!zile || zile.length === 0) return 'Nicio zi selectată';
-  return zile
-    .map((z) => z.charAt(0).toUpperCase() + z.slice(1))
-    .join(', ');
+  return zile.map((z) => z.charAt(0).toUpperCase() + z.slice(1)).join(', ');
 }
 
 function formateazaConsimtamant(

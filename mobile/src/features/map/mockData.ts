@@ -122,14 +122,23 @@ const DAN: CarpoolParent = {
   children: [DAVID],
 };
 
-export const mockParents: readonly CarpoolParent[] = [ANA, IOANA, MIHAI, ELENA, DAN];
+export const mockParents: readonly CarpoolParent[] = [
+  ANA,
+  IOANA,
+  MIHAI,
+  ELENA,
+  DAN,
+];
 
 const ALL_CHILDREN = mockParents.flatMap((parent) => parent.children);
 
 const SCHOOL_DAYS: readonly SchoolDay[] = [0, 1, 2, 3, 4];
 
 /** Soferii desemnati pentru fiecare zi din saptamana [dimineata, dupa-amiaza] */
-const WEEK_DRIVERS: Record<SchoolDay, { morning: CarpoolParent; afternoon: CarpoolParent }> = {
+const WEEK_DRIVERS: Record<
+  SchoolDay,
+  { morning: CarpoolParent; afternoon: CarpoolParent }
+> = {
   0: { morning: ANA, afternoon: IOANA },
   1: { morning: MIHAI, afternoon: ELENA },
   2: { morning: ANA, afternoon: DAN },

@@ -20,7 +20,7 @@ export function SettingsPage() {
     name: profil.numeComplet,
     email: profil.email,
     initial: profil.prenume.charAt(0).toUpperCase(),
-    avatarUrl: null,
+    avatarUrl: profil.avatarUrl ?? null,
   };
 
   return (

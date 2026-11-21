@@ -47,9 +47,14 @@ export function HomePage() {
   };
 
   // Gasim urmatoarea cursa relevanta pentru acest parinte sau copilul sau
-  const aziIso = new Date().toISOString().slice(0, 10);
+  const acum = new Date();
+  const aziIso = acum.toISOString().slice(0, 10);
+  const oraCurenta = `${String(acum.getHours()).padStart(2, '0')}:${String(acum.getMinutes()).padStart(2, '0')}`;
+
   const cursaUrmatoare = curse.find((c) => {
     if (c.data < aziIso) return false;
+    // Daca este o cursa din ziua de azi care s-a incheiat deja, trecem la urmatoarea
+    if (c.data === aziIso && c.oraSosire < oraCurenta) return false;
     const esteSofer = c.soferId === profil.id;
     const copilulParticipa = c.copii.some(
       (copil) =>

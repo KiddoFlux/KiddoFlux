@@ -11,7 +11,7 @@
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 import { telefonLaEmail } from '../src/auth';
 import { COD_DEMO, COLECTIE_CURSE, COLECTIE_PARINTI } from '../src/constants';
@@ -25,7 +25,14 @@ const folosesteEmulator = Boolean(
 
 function initializeazaApp() {
   if (getApps().length > 0) return;
-  const cale = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  let cale = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  if (!folosesteEmulator && !cale) {
+    if (existsSync('./serviceAccount.json')) {
+      cale = './serviceAccount.json';
+    } else if (existsSync('serviceAccount.json')) {
+      cale = 'serviceAccount.json';
+    }
+  }
   if (!folosesteEmulator && !cale) {
     throw new Error(
       'Lipseste GOOGLE_APPLICATION_CREDENTIALS (cheia de service account) si nu e setat niciun emulator.',

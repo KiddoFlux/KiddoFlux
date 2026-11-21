@@ -1,8 +1,4 @@
-import {
-  collection,
-  onSnapshot,
-  type Unsubscribe,
-} from 'firebase/firestore';
+import { collection, onSnapshot, type Unsubscribe } from 'firebase/firestore';
 
 import type { AvatarTone } from '@/components/ui/Avatar';
 import type { NextRide } from '@/features/home/types';
@@ -74,7 +70,10 @@ export function subscribeCurse(
 }
 
 /** Formateaza eticheta de zi raportata la ziua de astazi. */
-export function formateazaEtichetaZi(dataIso: string, azi = new Date()): string {
+export function formateazaEtichetaZi(
+  dataIso: string,
+  azi = new Date(),
+): string {
   const an = azi.getFullYear();
   const luna = String(azi.getMonth() + 1).padStart(2, '0');
   const zi = String(azi.getDate()).padStart(2, '0');
@@ -91,7 +90,15 @@ export function formateazaEtichetaZi(dataIso: string, azi = new Date()): string 
   if (dataIso === maineIso) return 'mâine';
 
   const d = new Date(dataIso);
-  const zile = ['duminică', 'luni', 'marți', 'miercuri', 'joi', 'vineri', 'sâmbătă'];
+  const zile = [
+    'duminică',
+    'luni',
+    'marți',
+    'miercuri',
+    'joi',
+    'vineri',
+    'sâmbătă',
+  ];
   return zile[d.getDay()] ?? dataIso;
 }
 
@@ -122,10 +129,35 @@ export function cursaLaNextRide(
 /** Construieste o cursa implicita personalizata pentru utilizatorul logat cand nu exista inca curse in Firestore. */
 export function creeazaFallbackNextRide(profil: ProfilParinte): NextRide {
   const acum = new Date();
-  const esteDupaAmiaza = acum.getHours() >= 12;
+  const ora = acum.getHours();
+  const minute = acum.getMinutes();
+  const oraFormatata = `${String(ora).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 
-  // Ziua disponibila a parintelui
+  let dayLabel = 'azi';
+  let direction: 'toSchool' | 'toHome' = 'toSchool';
+  let departureTime: TimeString = '07:35';
+  let arrivalTime: TimeString = '08:00';
+
+  if (oraFormatata < '08:00') {
+    dayLabel = 'azi';
+    direction = 'toSchool';
+    departureTime = '07:35';
+    arrivalTime = '08:00';
+  } else if (oraFormatata < '15:00') {
+    dayLabel = 'azi';
+    direction = 'toHome';
+    departureTime = '14:30';
+    arrivalTime = '15:00';
+  } else {
+    const ziSaptamana = acum.getDay(); // 5 = Vineri, 6 = Sambata
+    dayLabel = ziSaptamana === 5 || ziSaptamana === 6 ? 'luni' : 'mâine';
+    direction = 'toSchool';
+    departureTime = '07:35';
+    arrivalTime = '08:00';
+  }
+
   const esteSoferAstazi = profil.zileDisponibile.length > 0;
+  const soferFallback = profil.id === 'parinte-03' ? 'Ioana P.' : 'Mihai D.';
 
   const child: Child = {
     id: `copil-${profil.id}`,
@@ -135,11 +167,11 @@ export function creeazaFallbackNextRide(profil: ProfilParinte): NextRide {
   };
 
   return {
-    dayLabel: 'azi',
-    direction: esteDupaAmiaza ? 'toHome' : 'toSchool',
-    departureTime: (esteDupaAmiaza ? '14:30' : '07:35') as TimeString,
-    arrivalTime: (esteDupaAmiaza ? '15:00' : '08:00') as TimeString,
+    dayLabel,
+    direction,
+    departureTime,
+    arrivalTime,
     children: [child],
-    driverName: esteSoferAstazi ? null : 'Mihai D.',
+    driverName: esteSoferAstazi ? null : soferFallback,
   };
 }

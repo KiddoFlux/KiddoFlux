@@ -57,15 +57,17 @@ export function CalendarPage() {
     return plan ? [{ weekDates: dates, plan }] : [];
   });
 
-  const rides = mergePublishedRides(getMockRides(today), publishedPlans).map(
-    (ride) =>
-      takenRideIds.includes(ride.id)
-        ? { ...ride, driverName: null, needsReplacement: false }
-        : {
-            ...ride,
-            needsReplacement:
-              ride.needsReplacement || alertedRideIds.includes(ride.id),
-          },
+  const rides = mergePublishedRides(
+    getMockRides(today, profil?.id),
+    publishedPlans,
+  ).map((ride) =>
+    takenRideIds.includes(ride.id)
+      ? { ...ride, driverName: null, needsReplacement: false }
+      : {
+          ...ride,
+          needsReplacement:
+            ride.needsReplacement || alertedRideIds.includes(ride.id),
+        },
   );
 
   const myChildrenIds = useMemo(() => {
