@@ -3,46 +3,41 @@ import type { Child } from '@/types/ride';
 import { addWeeks, getWeekDays, toISODate } from './dateUtils';
 import type { CalendarRide } from './types';
 
+const LUCA: Child = {
+  id: 'copil-parinte-01',
+  name: 'Luca',
+  initial: 'L',
+  tone: 'peach',
+};
 const MARIA: Child = {
-  id: 'child-1',
+  id: 'copil-parinte-02',
   name: 'Maria',
   initial: 'M',
   tone: 'peach',
 };
 const ANDREI: Child = {
-  id: 'child-2',
+  id: 'copil-parinte-03',
   name: 'Andrei',
   initial: 'A',
-  tone: 'sage',
-};
-const LUCA: Child = {
-  id: 'child-3',
-  name: 'Luca',
-  initial: 'L',
   tone: 'steel',
 };
 const SOFIA: Child = {
-  id: 'child-4',
+  id: 'copil-parinte-04',
   name: 'Sofia',
   initial: 'S',
-  tone: 'peach',
+  tone: 'sage',
 };
 const DAVID: Child = {
-  id: 'child-5',
+  id: 'copil-parinte-05',
   name: 'David',
   initial: 'D',
   tone: 'sage',
 };
 
-const ALL_CHILDREN = [MARIA, ANDREI, LUCA, SOFIA, DAVID];
+const ALL_CHILDREN = [LUCA, MARIA, ANDREI, SOFIA, DAVID];
 
 /** The current user's children. */
-export const mockMyChildrenIds: readonly string[] = [MARIA.id];
-
-const IOANA = 'Ioana P.';
-const MIHAI = 'Mihai D.';
-const ELENA = 'Elena R.';
-const DAN = 'Dan C.';
+export const mockMyChildrenIds: readonly string[] = [LUCA.id];
 
 const MORNING = {
   direction: 'toSchool',
@@ -57,31 +52,55 @@ const AFTERNOON = {
 
 type WeekDrivers = readonly [string | null, string | null][];
 
-/** Null means the current user drives. Morning and afternoon for Monday to Friday. */
-const THIS_WEEK_DRIVERS: WeekDrivers = [
-  [null, IOANA],
-  [MIHAI, ELENA],
-  [null, DAN],
-  [IOANA, null],
-  [ELENA, MIHAI],
+const DRIVER_IDS_WEEK_1: [string, string][] = [
+  ['parinte-01', 'parinte-02'], // Luni: Ana, Ioana
+  ['parinte-03', 'parinte-04'], // Marti: Mihai, Elena
+  ['parinte-01', 'parinte-05'], // Miercuri: Ana, Dan
+  ['parinte-02', 'parinte-01'], // Joi: Ioana, Ana
+  ['parinte-04', 'parinte-03'], // Vineri: Elena, Mihai
 ];
 
-const NEXT_WEEK_DRIVERS: WeekDrivers = [
-  [DAN, null],
-  [IOANA, MIHAI],
-  [ELENA, null],
-  [null, DAN],
-  [MIHAI, IOANA],
+const DRIVER_IDS_WEEK_2: [string, string][] = [
+  ['parinte-05', 'parinte-01'],
+  ['parinte-02', 'parinte-03'],
+  ['parinte-04', 'parinte-01'],
+  ['parinte-01', 'parinte-05'],
+  ['parinte-03', 'parinte-02'],
 ];
+
+const DRIVER_NAMES: Record<string, string> = {
+  'parinte-01': 'Ana P.',
+  'parinte-02': 'Ioana P.',
+  'parinte-03': 'Mihai D.',
+  'parinte-04': 'Elena R.',
+  'parinte-05': 'Dan C.',
+};
 
 /** Friday afternoon shows what a ride looks like after its driver sent an alert. */
 const ALERTED_RIDE_DAY_INDEX = 4;
 
 /** Both weeks' rides. Dates are built from `today`, so they never go stale. */
-export function getMockRides(today: Date): CalendarRide[] {
+export function getMockRides(
+  today: Date,
+  currentUserId?: string,
+): CalendarRide[] {
+  const mapDrivers = (driverIds: [string, string][]): WeekDrivers =>
+    driverIds.map(([amId, pmId]) => [
+      amId === currentUserId ? null : (DRIVER_NAMES[amId] ?? 'Șofer'),
+      pmId === currentUserId ? null : (DRIVER_NAMES[pmId] ?? 'Șofer'),
+    ]);
+
   return [
-    ...getMockWeekRides(today, THIS_WEEK_DRIVERS, ALERTED_RIDE_DAY_INDEX),
-    ...getMockWeekRides(addWeeks(today, 1), NEXT_WEEK_DRIVERS, null),
+    ...getMockWeekRides(
+      today,
+      mapDrivers(DRIVER_IDS_WEEK_1),
+      ALERTED_RIDE_DAY_INDEX,
+    ),
+    ...getMockWeekRides(
+      addWeeks(today, 1),
+      mapDrivers(DRIVER_IDS_WEEK_2),
+      null,
+    ),
   ];
 }
 

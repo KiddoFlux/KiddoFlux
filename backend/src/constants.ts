@@ -9,6 +9,9 @@ export const SCOALA: Scoala = {
 /** Colectia Firestore cu profilurile parintilor. */
 export const COLECTIE_PARINTI = 'parinti';
 
+/** Colectia Firestore cu cursele de grup programate. */
+export const COLECTIE_CURSE = 'curse';
+
 /** Codul de acces comun tuturor conturilor demo (parola din Firebase Auth; minim 6 caractere). */
 export const COD_DEMO = '123456';
 

@@ -25,6 +25,19 @@ export type ProfileData = {
   parentPhone: string;
   parentEmail: string;
   homeAddress: string;
+  /** Zilele saptamanii in care parintele poate conduce (format afisabil). */
+  availableDaysLabel: string;
+  /** Status consimtamant carpool (format afisabil). */
+  consentLabel: string;
+
+  // Additional children if the parent has multiple.
+  additionalChildren?: {
+    firstName: string;
+    heightCm: number;
+    grade: string;
+    matriculationNumber: string;
+    seatTypeBadge: string;
+  }[];
 
   // The parent's car.
   vehicleName: string;

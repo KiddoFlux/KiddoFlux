@@ -1,6 +1,8 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Linking } from 'react-native';
+
+import { useAuth } from '@/features/auth/AuthProvider';
 
 import { MapScreen } from './MapScreen';
 import {
@@ -20,8 +22,13 @@ function callDriver(driver: CarpoolParent) {
 
 /** Supplies the map's data and actions. MapScreen only draws them. */
 export function MapPage() {
-  // TODO: load the group's weekly schedule from Firebase once the backend exists.
+  const { profil } = useAuth();
   const [rides] = useState(getMockRides);
+
+  const myChildrenIds = useMemo(() => {
+    if (!profil) return mockMyChildrenIds;
+    return [`copil-${profil.id}`];
+  }, [profil]);
 
   return (
     <MapScreen
@@ -29,7 +36,7 @@ export function MapPage() {
       parents={mockParents}
       school={mockSchool}
       defaultCenter={DEFAULT_CENTER}
-      myChildrenIds={mockMyChildrenIds}
+      myChildrenIds={myChildrenIds}
       onCallDriver={callDriver}
       onPlanRides={() => router.push('/planifica')}
     />

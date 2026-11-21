@@ -58,6 +58,7 @@ export type ProfilParinte = {
   /** Format afisat, ex. "0700 100 001". */
   telefon: string;
   email: string;
+  avatarUrl?: string | null;
   adresaAcasa: string;
   scoala: Scoala;
   vehicul: Vehicul;
@@ -100,3 +101,33 @@ export type Disponibilitate = {
   /** Timestamp pus de server la fiecare publicare. */
   actualizatLa: unknown;
 };
+
+/** Informatii despre un copil inscris intr-o cursa de carpool. */
+export type CopilCursa = {
+  id: string;
+  parinteId: string;
+  prenume: string;
+  initiala: string;
+  clasa: string;
+  necesitaScaunAuto: boolean;
+};
+
+/** Documentul Firestore `curse/{id}` - o cursa atribuita de grup. */
+export type CursaGrup = {
+  id: string;
+  data: string;
+  zi: ZiSaptamana;
+  directie: DirectieCursa;
+  oraPlecare: string;
+  oraSosire: string;
+  soferId: string;
+  soferNume: string;
+  soferPrenume: string;
+  soferTelefon: string;
+  soferMasina: string;
+  locuriTotale: number;
+  locuriOcupate: number;
+  copii: CopilCursa[];
+  necesitaInlocuitor: boolean;
+};
+
